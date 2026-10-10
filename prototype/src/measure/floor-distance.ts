@@ -62,6 +62,15 @@ export function measureFloorDistance(input: Input): Outcome {
         "Move the points closer to the sheet, or retake the photo from higher up.",
     );
 
+  // A bar as large as the distance itself would round to something like
+  // "0 ± 400 cm", which reads as a result but is not one.
+  if (2 * spread.sd >= mm)
+    return fail(
+      "Too uncertain to call a measurement: the error bar is as large as the distance itself. " +
+        "This happens far from the sheet or when the sheet is small in the photo. " +
+        "Put the sheet nearer the spots you are measuring, or take the photo closer.",
+    );
+
   const result = measured(fromMm(mm, unit), fromMm(2 * spread.sd, unit), unit, BASIS);
   return {
     ok: true,

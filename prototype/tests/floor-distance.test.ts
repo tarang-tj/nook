@@ -46,7 +46,7 @@ describe("measureFloorDistance", () => {
 
   it("has an error bar that grows with distance from the sheet", () => {
     // The same 50 cm span, moved further and further away from the sheet.
-    const bars = [300, 1500, 3000, 5000].map(
+    const bars = [300, 1000, 2000, 3000].map(
       (y) => ok(measure({ x: -250, y }, { x: 250, y })).measured.error,
     );
     for (const bar of bars) expect(bar).toBeGreaterThan(0);
@@ -70,6 +70,14 @@ describe("measureFloorDistance", () => {
 
     const sameSpot = measure({ x: 100, y: 500 }, { x: 100, y: 500 });
     expect(sameSpot).toEqual({ ok: false, reason: expect.stringContaining("same spot") });
+
+    // Far from the sheet with sloppy taps, the bar swallows the distance.
+    const far = measureFloorDistance({
+      corners: c, a: project({ x: -250, y: 6000 }), b: project({ x: 250, y: 6000 }),
+      reference: letter, unit: "cm", sigmaPx: 12,
+    });
+    expect(far.ok).toBe(false);
+    if (!far.ok) expect(far.reason).toMatch(/Too uncertain|error bar/);
 
     // A tap above the horizon (the top of the photo) is not on the floor.
     const sky = measureFloorDistance({

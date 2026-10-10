@@ -5,7 +5,7 @@ import type { Pt } from "../src/measure/homography";
 const HEIGHT = 1400; // camera height above the floor, mm
 const BACK = 1500; // camera stands this far behind the floor origin, mm
 const TILT = (35 * Math.PI) / 180; // camera pitched down from level
-const FOCAL = 1400; // focal length, pixels
+const FOCAL = 3200; // focal length in pixels (a made-up value, like the rest)
 const CENTRE = { x: 1500, y: 2000 }; // middle of a 3000 x 4000 photo
 
 /** Where a floor point (mm) lands in the photo (pixels). */
