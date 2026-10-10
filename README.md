@@ -7,7 +7,7 @@ Nook is our BUS 444 (UW Bothell, Autumn 2026) team project, described on the tea
 ## Status
 
 - A shared place for the team's work, with draft notes written as options and open questions.
-- A small web prototype that measures one distance on a floor from one photo. It is a baseline to react to, not a product direction. It has not been tried on a real phone or checked against a tape measure yet.
+- A small web prototype that measures one distance on a floor from one photo. It is a baseline to react to, not a product direction. It has been run in a laptop browser on a made-up picture. It has not been tried on a real phone, on a real photo, or checked against a tape measure.
 - No product decisions are recorded here. See [docs/decisions](docs/decisions/README.md) for how to record one.
 
 ## Run the prototype

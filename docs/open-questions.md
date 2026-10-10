@@ -28,7 +28,7 @@
 
 | Question | Who could answer it |
 | --- | --- |
-| Does it open and work on a real iPhone and a real Android phone? It has only been run on a laptop. | Anyone with a phone and ten minutes |
+| Does it open and work on a real iPhone and a real Android phone? It has only been run in a laptop browser (Chrome), with scripted clicks on a made-up picture. | Anyone with a phone and ten minutes |
 | How close is it to a tape measure in a real room? Nobody has checked. | Anyone with a tape measure and a sheet of paper |
 | Do phone photos come in the right way up? | Whoever tries it on a phone |
 | Is the assumed tap accuracy (about 1.5 screen pixels) realistic for a finger? It is an assumption carried over from SPECTRA. | Whoever tests it: tap the same corner several times and compare |
