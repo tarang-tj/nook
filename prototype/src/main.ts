@@ -136,7 +136,12 @@ canvas.addEventListener("pointerdown", (e) => {
     index = points.length - 1;
   }
   held = { index, id: e.pointerId, ox, oy };
-  canvas.setPointerCapture(e.pointerId);
+  try {
+    // Keep receiving moves if the finger slides off the photo.
+    canvas.setPointerCapture(e.pointerId);
+  } catch {
+    // Some browsers refuse capture for some pointers. Placing still works.
+  }
   showLoupe(e, points[index]);
   render();
 });
