@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#14161a" />
+    <title>Nook prototype: measure a floor distance from a photo</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Nook <span class="tag">prototype</span></h1>
+      <div class="row">
+        <label class="button">
+          Take photo
+          <input id="take" class="visually-hidden" type="file" accept="image/*" capture="environment" />
+        </label>
+        <label class="button">
+          Choose photo
+          <input id="choose" class="visually-hidden" type="file" accept="image/*" />
+        </label>
+        <label>
+          Paper
+          <select id="paper">
+            <option value="letter">US Letter</option>
+            <option value="a4">A4</option>
+          </select>
+        </label>
+        <label>
+          Units
+          <select id="unit">
+            <option value="cm">cm</option>
+            <option value="in">inches</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas id="photo" role="img" aria-label="Your photo. Tap or click to place points."></canvas>
+      <canvas id="loupe" width="132" height="132" hidden aria-hidden="true"></canvas>
+      <p id="empty">
+        Lay one sheet of paper flat on the floor. Take a photo with the whole sheet and the two
+        spots you want to measure between in view. Then tap the four corners of the sheet and the
+        two spots.
+      </p>
+    </main>
+
+    <footer>
+      <p id="step" aria-live="polite"></p>
+      <output id="result" aria-live="polite"></output>
+      <p id="basis" class="small"></p>
+      <div class="row">
+        <button id="undo" type="button" disabled>Undo</button>
+        <button id="reset" type="button" disabled>Start over</button>
+        <label class="check">
+          <input id="swap" type="checkbox" />
+          Sheet's long side is the one that looks shorter
+        </label>
+      </div>
+      <p class="small">Your photo stays on this device. Nothing is uploaded.</p>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
