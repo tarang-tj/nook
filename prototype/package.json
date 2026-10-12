@@ -2,7 +2,7 @@
   "name": "nook-prototype",
   "version": "0.1.0",
   "private": true,
-  "description": "Nook prototype: measure a floor distance from one photo, with a sheet of paper as the known size.",
+  "description": "Nook prototype, a draft sample: measure a distance, a room outline and a simple fit on a floor from one photo, with a sheet of paper as the known size.",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"

@@ -1,0 +1,164 @@
+// The words under the photo: what to do next, and each result or the reason
+// there is none. Pure: the page only copies these strings onto the screen.
+import { FIT_BASIS, fitVerdict, insideOutline } from "../measure/fit";
+import { formatMeasured } from "../measure/format";
+import { BASIS, TAP_SIGMA_SCREEN_PX } from "../measure/monte-carlo";
+import type { Measured } from "../measure/noise";
+import { OUTLINE_BASIS } from "../measure/outline";
+import { referenceById } from "../measure/references";
+import type { Bars, Settings, Solved } from "./numbers";
+import { sheetWords } from "./sheet-edges";
+import type { State } from "./state";
+import { areaOf, firstSentence, lengthOf, stepText, truthText } from "./words";
+
+export type { Settings } from "./numbers";
+
+/** What the page itself knows: whether a photo is loaded, whether it is the
+ * made-up sample floor, and a message that must stay up until something
+ * replaces it (a file that would not open). */
+export type Page = { hasPhoto: boolean; notice: string; sample?: boolean };
+
+/** Said wherever a number from this page can end up: on screen and in both saved files. */
+export const NOT_CHECKED = "Not checked against a tape measure or a real photo.";
+
+/** The words that are always on screen under a result, even with the long
+ * text folded away. They name the assumption the ± stands on, because a tap
+ * a few pixels looser than it leaves the true value outside the bar. */
+export const UNCHECKED =
+  `${NOT_CHECKED} The ± covers tap placement only, and takes each tap to land about ${TAP_SIGMA_SCREEN_PX} screen pixels off its spot. ` +
+  "That is an assumption: a tap further off can leave the true value outside the ±.";
+
+/** One number in a list: its bar, or the refusal in words. */
+export type Row = { name: string; measured: Measured | null; text: string };
+
+export type Report = {
+  notice: string;
+  step: string;
+  /** The error bars are still being worked out: show this, and no number. */
+  working: boolean;
+  /** The one big result of the distance tool. */
+  headline: string;
+  /** Why there is no measurement at all. */
+  problem: string;
+  /** The room tool's numbers: each wall, the perimeter, the floor area. */
+  rows: Row[];
+  /** The fit tool's sentences. */
+  verdicts: string[];
+  /** Refusals in full, and warnings about a bar. Each said once. */
+  notes: string[];
+  /** On the made-up floor only: the true values, to compare with. */
+  truth: string[];
+  /** What the ± covers and leaves out, in full. Empty when nothing is shown. */
+  basis: string;
+  /** The paper size and long side the page assumed for the sheet. */
+  sheet: string;
+  /** The same for the second sheet, when there is one. */
+  second: string;
+  /** Which references the plane map was solved from. */
+  used: string;
+};
+
+/** Added to the basis when more than one reference is in use. */
+export const EXACT =
+  "With more than one reference, the floor's plane map is the one that misses every known size by the least. " +
+  "Each paper size and typed length is taken as exact: a wrong one is believed, not caught, and the ± does not cover it.";
+
+const ZOOM_HINT = "Taps made zoomed out count as far less exact: zoom in and drag each point onto its spot.";
+
+export function report(s: State, page: Page, set: Settings, solved: Solved | null, bars: Bars | null): Report {
+  const out = build(s, page, set, solved, bars);
+  if (out.basis && solved?.ok && solved.used.length > 1) out.basis = `${out.basis} ${EXACT}`;
+  return out;
+}
+
+function build(s: State, page: Page, set: Settings, solved: Solved | null, bars: Bars | null): Report {
+  const out: Report = {
+    notice: page.notice,
+    step: stepText(s, page.hasPhoto),
+    working: false, headline: "", problem: "", rows: [], verdicts: [], notes: [], truth: [], basis: "",
+    sheet: s.points.sheet.length === 4 ? sheetWords("Sheet", referenceById(set.paper), set.swap, set.unit) : "",
+    second: s.points.second.length === 4 ? sheetWords("Second sheet", referenceById(set.paper2), set.swap2, set.unit) : "",
+    used: solved?.ok ? `Plane map solved from: ${solved.used.join(", ")}.` : "",
+  };
+  if (!page.hasPhoto || !solved) return out;
+  if (!solved.ok) {
+    // Each refusal ends with what to do about it, unless it already says.
+    const then = /zero or missing/.test(solved.reason)
+      ? " Type its length under Tighter accuracy."
+      : /contradicts/.test(solved.reason) ? "" : " Drag the points or press Undo.";
+    out.problem = `No measurement. ${solved.reason}${then}`;
+    return out;
+  }
+  if (Object.keys(solved.values).length === 0) return out; // nothing to measure yet
+  if (page.sample) out.truth = truthText(s, set.unit);
+  if (!bars) {
+    out.working = true;
+    return out;
+  }
+  const note = (text: string | null | undefined) => {
+    if (text && !out.notes.includes(text)) out.notes.push(text);
+  };
+  const refusal = (reason: string): string => {
+    note(/uncertain|trustworthy/.test(reason) ? `${reason} ${ZOOM_HINT}` : reason);
+    return `no number. ${firstSentence(reason)}`;
+  };
+  const warn = (key: string) => {
+    const bar = bars[key];
+    if (bar && bar.value !== null) note(bar.warning);
+  };
+  const reasonOf = (key: string): string => {
+    const bar = bars[key];
+    return bar && bar.value === null ? bar.reason : solved.outlineProblem ?? "The taps as placed do not give a number here.";
+  };
+
+  if (s.tool === "distance") {
+    const m = lengthOf(bars.distance, set.unit, BASIS);
+    if (m) out.headline = `A to B: ${formatMeasured(m)}`;
+    else out.problem = `No measurement. ${refusal(reasonOf("distance")).replace(/^no number\. /, "")}`;
+    if (m) warn("distance");
+    out.basis = BASIS;
+    return out;
+  }
+
+  if ("perimeter" in solved.values && s.tool === "room") {
+    if (solved.outlineProblem) {
+      out.problem = `No measurement. ${solved.outlineProblem}`;
+      return out;
+    }
+    const row = (name: string, key: string, m: Measured | null): Row => {
+      if (m) warn(key);
+      return { name, measured: m, text: m ? formatMeasured(m) : refusal(reasonOf(key)) };
+    };
+    const n = s.points.room.length;
+    for (let i = 0; i < n; i++)
+      out.rows.push(row(`Wall ${i + 1} (corner ${i + 1} to ${((i + 1) % n) + 1})`, `wall${i}`, lengthOf(bars[`wall${i}`], set.unit, OUTLINE_BASIS)));
+    out.rows.push(row("Perimeter", "perimeter", lengthOf(bars.perimeter, set.unit, OUTLINE_BASIS)));
+    out.rows.push(row("Floor area", "area", areaOf(bars.area, set.unit, OUTLINE_BASIS)));
+    out.basis = OUTLINE_BASIS;
+    return out;
+  }
+
+  if (s.tool === "fit") {
+    const [width, depth] = [set.thingWidthMm, set.thingDepthMm];
+    if (bars.gap) {
+      out.verdicts.push(`Width first. ${fitVerdict(bars.gap, width, set.unit).sentence}`);
+      if (depth !== width) out.verdicts.push(`Turned a quarter turn. ${fitVerdict(bars.gap, depth, set.unit).sentence}`);
+      warn("gap");
+    }
+    const { room, foot } = solved.floor;
+    if (!s.closed) out.verdicts.push("To try the thing inside a room, close an outline on the Room tab, then come back here.");
+    else if (solved.outlineProblem) out.verdicts.push(`Inside the outline: cannot say. ${solved.outlineProblem}`);
+    else if (!room || !foot) out.verdicts.push("Inside the outline: cannot say. Type a width and a depth above zero.");
+    else {
+      const spare = bars.spare;
+      out.verdicts.push(
+        !spare || spare.value === null
+          ? `Inside the outline: cannot say. ${spare ? spare.reason : "The room around the thing could not be worked out."}`
+          : `Inside the outline. ${insideOutline(foot, room, spare.error, 0, set.unit).sentence}`,
+      );
+      warn("spare");
+    }
+    out.basis = FIT_BASIS;
+  }
+  return out;
+}

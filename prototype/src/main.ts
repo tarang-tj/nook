@@ -1,201 +1,193 @@
-// The page: load a photo, collect six taps, show the distance.
-// The maths lives in ./measure. Drawing lives in ./ui/view.
-import type { Pt } from "./measure/homography";
-import { measureFloorDistance } from "./measure/floor-distance";
+// The page: load a photo, pass taps to the pointer rules, show the words.
+// The maths lives in ./measure, the rules in ./app, the screen in ./ui.
+import { csvOf, planOf } from "./app/exports";
+import { createLater } from "./app/later";
+import { barsOf, sceneOf, solve, type Bars } from "./app/numbers";
+import { forNewPicture, paperPicked, startPicture, withoutExtra, type Aside } from "./app/picture-settings";
+import { createPointer } from "./app/pointer";
+import { report, type Report } from "./app/report";
+import { placeSampleTaps, SAMPLE_EXTRAS } from "./app/sample-taps";
+import { sheetEdges } from "./app/sheet-edges";
+import { canUndo, closeRoom, hasTaps, newState, removeExtra, reset, undo, type Tool } from "./app/state";
+import { clampView, isFitted, zoomWords } from "./app/zoom";
+import { floorToPhoto } from "./measure/inverse";
 import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
+import type { Plan } from "./measure/plan";
 import { referenceById } from "./measure/references";
-import { degenerateReason, orderCorners } from "./measure/sheet";
-import { isUnit, type Unit } from "./measure/units";
-import { draw, drawLoupe, fitContain, nearest, toImage, type Fit } from "./ui/view";
+import { isMoving, wireTabs, wireView } from "./ui/controls";
+import { download, el } from "./ui/dom";
+import { draw, drawCross, type Box, type Photo } from "./ui/draw";
+import { showPanel } from "./ui/panel";
+import { wirePhotoInputs } from "./ui/photo-input";
+import { wirePointer } from "./ui/pointer-events";
+import { readSettings, SETTING_IDS, writePictureSettings } from "./ui/settings";
+import { fitContain, type Fit } from "./ui/view";
 
-const el = <T extends HTMLElement>(id: string): T => {
-  const node = document.getElementById(id);
-  if (!node) throw new Error(`Missing #${id} in index.html`);
-  return node as T;
-};
-const stage = el<HTMLElement>("stage");
+const stage = el("stage");
 const canvas = el<HTMLCanvasElement>("photo");
 const loupe = el<HTMLCanvasElement>("loupe");
-const empty = el<HTMLElement>("empty");
-const step = el<HTMLElement>("step");
-const result = el<HTMLOutputElement>("result");
-const basis = el<HTMLElement>("basis");
-const undo = el<HTMLButtonElement>("undo");
-const reset = el<HTMLButtonElement>("reset");
-const swap = el<HTMLInputElement>("swap");
-const paper = el<HTMLSelectElement>("paper");
-const unitSelect = el<HTMLSelectElement>("unit");
 
-const MAX_POINTS = 6; // four sheet corners, then two floor points
-const GRAB_RADIUS_PX = 28; // how close (screen px) a press must be to pick up a point
+const state = newState();
+let photo: Photo | null = null;
+/** The made-up sample floor is showing, not a photo. */
+let sample = false;
+/** A message that stays up until a photo loads: a file that would not open. */
+let notice = "";
+let view: Fit = { scale: 1, dx: 0, dy: 0 };
+let box: Box = { w: 1, h: 1, dpr: 1 };
+/** What is on screen now, for the save buttons. */
+let shown: { words: Report; plan: Plan | null } | null = null;
 
-let img: HTMLImageElement | null = null;
-let fit: Fit = { scale: 1, dx: 0, dy: 0 };
-let box = { w: 1, h: 1, dpr: 1 };
-let points: Pt[] = [];
-/** The point being placed or moved, and the finger's offset from it. */
-let held: { index: number; id: number; ox: number; oy: number } | null = null;
+const later = createLater<Bars>(() => render());
+const pointer = createPointer({
+  state,
+  photo: () => photo,
+  box: () => box,
+  view: () => view,
+  setView: (next) => { view = next; },
+  panning: isMoving,
+});
 
 function layout(): void {
   const r = stage.getBoundingClientRect();
+  // Keep a zoom the person chose; refit only when the whole photo was in view.
+  const fitted = !photo || isFitted(view, photo, box);
   box = { w: Math.max(1, r.width), h: Math.max(1, r.height), dpr: window.devicePixelRatio || 1 };
   canvas.width = Math.round(box.w * box.dpr);
   canvas.height = Math.round(box.h * box.dpr);
-  if (img) fit = fitContain(img.naturalWidth, img.naturalHeight, box.w, box.h);
+  if (photo) view = fitted ? fitContain(photo.w, photo.h, box.w, box.h) : clampView(view, photo, box);
   render();
 }
 
 function render(): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  if (!img) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  } else {
-    const ordered = points.length >= 4 ? orderCorners(points.slice(0, 4)) : null;
-    draw(ctx, img, fit, points, ordered, box);
-  }
-  report();
-}
+  const set = readSettings();
+  const scene = photo ? sceneOf(state, set) : null;
+  const solved = scene ? solve(scene) : null;
+  // The bars are slow, so they come later: null here means "working".
+  let bars: Bars | null = null;
+  if (scene && solved?.ok && Object.keys(solved.values).length > 0) {
+    bars = later.want(JSON.stringify(scene), () => barsOf(scene, solved));
+    if (!pointer.busy()) later.hurry(); // no finger down: no need to wait for a pause
+  } else later.drop();
+  const words = report(state, { hasPhoto: !!photo, notice, sample }, set, solved, bars);
 
-/** The words under the photo: what to do next, and the result or the reason. */
-function report(): void {
-  const n = points.length;
-  undo.disabled = n === 0;
-  reset.disabled = n === 0;
-  result.className = "";
-  result.textContent = "";
-  basis.textContent = "";
-  if (!img) {
-    step.textContent = "Step 1 of 3: take or choose a photo.";
-    return;
+  if (!photo) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  else {
+    const { sheet, second } = state.points;
+    draw(ctx, {
+      photo, view, box, state,
+      edges: sheetEdges(sheet, referenceById(set.paper), set.swap, set.unit) ?? [],
+      edges2: sheetEdges(second, referenceById(set.paper2), set.swap2, set.unit) ?? [],
+      foot: solved?.ok && solved.floor.foot ? floorToPhoto(solved.h, solved.floor.foot) : null,
+    });
+    if (canvas.matches(":focus-visible")) drawCross(ctx, box);
   }
-  if (n < 4) {
-    step.textContent = `Step 2 of 3: tap the four corners of the sheet (${n} of 4). Drag a point to adjust it.`;
-    return;
-  }
-  const why = degenerateReason(orderCorners(points.slice(0, 4)));
-  if (n < 6) {
-    step.textContent = `Step 3 of 3: tap the two spots on the floor to measure between (${n - 4} of 2).`;
-    if (why) problem(`The four corners cannot be used: ${why}. Drag them or press Undo.`);
-    return;
-  }
-  step.textContent = "Drag any point to adjust it. Start over clears the points.";
-  const unit: Unit = isUnit(unitSelect.value) ? unitSelect.value : "cm";
-  const outcome = measureFloorDistance({
-    corners: points.slice(0, 4),
-    a: points[4],
-    b: points[5],
-    reference: referenceById(paper.value),
-    unit,
-    swapSides: swap.checked,
+  // The view as numbers, for anyone driving the page from a script.
+  canvas.dataset.view = [view.scale, view.dx, view.dy].join(",");
+
+  const plan = state.tool === "room" && state.closed ? planOf(solved, words.rows, set, sample) : null;
+  shown = { words, plan };
+  el<HTMLButtonElement>("undo").disabled = !canUndo(state);
+  el<HTMLButtonElement>("reset").disabled = !hasTaps(state);
+  el<HTMLButtonElement>("save-csv").disabled = words.rows.length === 0;
+  showPanel(words, {
+    state, hasPhoto: !!photo, sample, plan, unit: set.unit,
+    zoom: photo ? zoomWords(view, TAP_SIGMA_SCREEN_PX) : "",
   });
-  if (!outcome.ok) return problem(outcome.reason);
-  result.textContent = `A to B: ${outcome.text}`;
-  basis.textContent = (outcome.warning ? `${outcome.warning} ` : "") + outcome.measured.basis;
 }
 
-function problem(text: string): void {
-  result.className = "problem";
-  result.textContent = `No measurement. ${text}`;
-}
+wirePointer(canvas, loupe, pointer, { photo: () => photo, view: () => view, render });
+for (const name of ["focus", "blur"]) canvas.addEventListener(name, render);
 
-/** A pointer position as a photo pixel, kept inside the photo. */
-function photoPoint(e: PointerEvent, ox = 0, oy = 0): Pt {
-  const r = canvas.getBoundingClientRect();
-  const p = toImage(fit, e.clientX - r.left, e.clientY - r.top);
-  return {
-    x: Math.min(img!.naturalWidth, Math.max(0, p.x + ox)),
-    y: Math.min(img!.naturalHeight, Math.max(0, p.y + oy)),
-    // Tap uncertainty in photo pixels, fixed at the zoom the point was placed at.
-    s: TAP_SIGMA_SCREEN_PX / fit.scale,
-  };
-}
-
-function showLoupe(e: PointerEvent, p: Pt): void {
-  const r = canvas.getBoundingClientRect();
-  // Keep the loupe out from under the finger.
-  loupe.classList.toggle("right", e.clientX - r.left < 170 && e.clientY - r.top < 170);
-  loupe.hidden = false;
-  const ctx = loupe.getContext("2d");
-  if (ctx && img) drawLoupe(ctx, img, p, fit, loupe.width);
-}
-
-canvas.addEventListener("pointerdown", (e) => {
-  if (!img || held) return;
-  const at = photoPoint(e);
-  let index = nearest(points, at, GRAB_RADIUS_PX / fit.scale);
-  let ox = 0;
-  let oy = 0;
-  if (index >= 0) {
-    // Picking up an existing point: remember the offset so it does not jump.
-    ox = points[index].x - at.x;
-    oy = points[index].y - at.y;
-  } else {
-    if (points.length >= MAX_POINTS) return;
-    points.push(at);
-    index = points.length - 1;
-  }
-  held = { index, id: e.pointerId, ox, oy };
-  try {
-    // Keep receiving moves if the finger slides off the photo.
-    canvas.setPointerCapture(e.pointerId);
-  } catch {
-    // Some browsers refuse capture for some pointers. Placing still works.
-  }
-  showLoupe(e, points[index]);
+wireView({
+  canvas,
+  photo: () => photo,
+  box: () => box,
+  view: () => view,
+  look: (next) => { view = next; render(); },
+  tapAt: (at) => {
+    const press = { id: -1, x: at.x, y: at.y, type: "mouse" };
+    pointer.down(press);
+    pointer.up(press);
+    render();
+  },
+});
+wireTabs((tool) => {
+  state.tool = tool as Tool;
   render();
 });
 
-canvas.addEventListener("pointermove", (e) => {
-  if (!held || e.pointerId !== held.id) return;
-  points[held.index] = photoPoint(e, held.ox, held.oy);
-  showLoupe(e, points[held.index]);
-  render();
+/** Run a change to the taps, then redraw. */
+const act = (id: string, change: () => void) =>
+  el(id).addEventListener("click", () => {
+    change();
+    render();
+  });
+act("undo", () => undo(state));
+/** The person's own first paper while the made-up floor shows its own. */
+let aside: Aside = null;
+/** The papers, swap boxes and known length belong to one picture: start each one clean. */
+const freshSettings = () => {
+  const next = startPicture(readSettings(), sample, aside);
+  aside = next.aside;
+  writePictureSettings(next.set);
+};
+const paperBox = el<HTMLSelectElement>("paper");
+paperBox.addEventListener("change", () => { aside = paperPicked(aside, paperBox.value); });
+act("reset", () => {
+  reset(state);
+  freshSettings();
+});
+act("close", () => closeRoom(state));
+act("turn-left", () => { state.turn = (state.turn + 165) % 180; });
+act("turn-right", () => { state.turn = (state.turn + 15) % 180; });
+act("sample-taps", () => {
+  const before = { sheet: state.points.sheet.length, second: state.points.second.length, span: state.points.span.length };
+  placeSampleTaps(state);
+  // Taps placed for the person sit on the made-up floor's own sheets and
+  // stick, so those get the floor's own paper sizes and length with them.
+  const now = readSettings();
+  const own = forNewPicture(now, true);
+  if (state.points.sheet.length === 4 && before.sheet < 4) Object.assign(now, { paper: own.paper, swap: own.swap });
+  if (state.points.second.length === 4 && before.second < 4) Object.assign(now, { paper2: own.paper2, swap2: own.swap2 });
+  if (state.points.span.length === 2 && before.span < 2) now.spanMm = SAMPLE_EXTRAS.spanMm;
+  writePictureSettings(now);
+});
+act("add-second", () => { state.adding = "second"; });
+act("add-span", () => { state.adding = "span"; });
+for (const extra of ["second", "span"] as const)
+  act(`remove-${extra}`, () => {
+    removeExtra(state, extra);
+    writePictureSettings(withoutExtra(readSettings(), extra, sample));
+  });
+for (const id of SETTING_IDS)
+  for (const name of ["change", "input"]) el(id).addEventListener(name, render);
+
+el("save-svg").addEventListener("click", () => {
+  if (shown?.plan?.ok) download("nook-draft-plan.svg", shown.plan.svg, "image/svg+xml");
+});
+el("save-csv").addEventListener("click", () => {
+  if (shown?.words.rows.length) download("nook-draft-walls.csv", csvOf(shown.words.rows, sample), "text/csv");
 });
 
-function release(e: PointerEvent): void {
-  if (!held || e.pointerId !== held.id) return;
-  held = null;
-  loupe.hidden = true;
+/** Show a new picture, whole, with no taps on it. */
+function usePhoto(next: Photo, madeUp: boolean): void {
+  photo = next;
+  sample = madeUp;
+  notice = "";
+  reset(state);
+  freshSettings();
+  el("empty").hidden = true;
+  view = fitContain(next.w, next.h, box.w, box.h);
+  layout();
 }
-canvas.addEventListener("pointerup", release);
-canvas.addEventListener("pointercancel", release);
 
-undo.addEventListener("click", () => {
-  points.pop();
+wirePhotoInputs(usePhoto, (why) => {
+  notice = why;
   render();
 });
-reset.addEventListener("click", () => {
-  points = [];
-  swap.checked = false;
-  render();
-});
-for (const control of [swap, paper, unitSelect]) control.addEventListener("change", render);
-
-/** Read the chosen file into an image. It never leaves the browser. */
-function load(input: HTMLInputElement): void {
-  const file = input.files?.[0];
-  input.value = ""; // so choosing the same photo again still fires
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  const next = new Image();
-  next.onload = () => {
-    URL.revokeObjectURL(url);
-    img = next;
-    points = [];
-    empty.hidden = true;
-    layout();
-  };
-  next.onerror = () => {
-    URL.revokeObjectURL(url);
-    step.textContent = "That file could not be opened as a photo. Try another one.";
-  };
-  next.src = url;
-}
-for (const id of ["take", "choose"]) {
-  const input = el<HTMLInputElement>(id);
-  input.addEventListener("change", () => load(input));
-}
 
 new ResizeObserver(layout).observe(stage);
 layout();
