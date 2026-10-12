@@ -1,7 +1,9 @@
 // The page: load a photo, pass taps to the pointer rules, show the words.
 // The maths lives in ./measure, the rules in ./app, drawing in ./ui.
 import { createPointer, type Tap } from "./app/pointer";
-import { report } from "./app/report";
+import { report, UNCHECKED, type Settings } from "./app/report";
+import { sheetEdges } from "./app/sheet-edges";
+import { referenceById } from "./measure/references";
 import { hasTaps, newState, reset, undo } from "./app/state";
 import { clampView, isFitted, panBy, zoomAt, zoomWords, ZOOM_STEP } from "./app/zoom";
 import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
@@ -29,9 +31,15 @@ const paper = el<HTMLSelectElement>("paper");
 const unitSelect = el<HTMLSelectElement>("unit");
 const moveButton = el<HTMLButtonElement>("move");
 const zoomText = el<HTMLElement>("zoom-text");
+const noticeText = el<HTMLElement>("notice");
+const unchecked = el<HTMLElement>("unchecked");
+const basisBox = el<HTMLElement>("basis-box");
+const sheetWordsText = el<HTMLElement>("sheet-words");
 
 const state = newState();
 let photo: Photo | null = null;
+/** A message that stays up until a photo loads: a file that would not open. */
+let notice = "";
 let fit: Fit = { scale: 1, dx: 0, dy: 0 };
 let box: Box = { w: 1, h: 1, dpr: 1 };
 const pointer = createPointer({
@@ -54,27 +62,38 @@ function layout(): void {
   render();
 }
 
+const settings = (): Settings => ({
+  paper: paper.value,
+  swap: swap.checked,
+  unit: isUnit(unitSelect.value) ? unitSelect.value : "cm",
+});
+
 function render(): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const { sheet, ends } = state.points;
+  const now = settings();
   if (!photo) ctx.clearRect(0, 0, canvas.width, canvas.height);
   else {
-    draw(ctx, photo, fit, sheet, ends, sheet.length === 4 ? orderCorners(sheet) : null, box);
+    const edges = sheetEdges(sheet, referenceById(now.paper), now.swap, now.unit);
+    draw(ctx, photo, fit, sheet, ends, sheet.length === 4 ? orderCorners(sheet) : null, edges ?? [], box);
     if (canvas.matches(":focus-visible")) drawCross(ctx, box);
   }
 
   undoButton.disabled = resetButton.disabled = !hasTaps(state);
   zoomText.textContent = photo ? zoomWords(fit, TAP_SIGMA_SCREEN_PX) : "";
-  const words = report(state, !!photo, {
-    paper: paper.value,
-    swap: swap.checked,
-    unit: isUnit(unitSelect.value) ? unitSelect.value : "cm",
-  });
+  // The view as numbers, for anyone driving the page from a script.
+  canvas.dataset.view = [fit.scale, fit.dx, fit.dy].join(",");
+  const words = report(state, { hasPhoto: !!photo, notice }, now);
+  noticeText.hidden = !words.notice;
+  noticeText.textContent = words.notice;
   step.textContent = words.step;
   result.className = words.problem ? "problem" : "";
   result.textContent = words.result;
+  unchecked.hidden = basisBox.hidden = !words.basis;
+  unchecked.textContent = UNCHECKED;
   basis.textContent = words.basis;
+  sheetWordsText.textContent = words.sheet;
 }
 
 /** A pointer event as the pointer rules want it: canvas pixels, no browser types. */
@@ -174,6 +193,16 @@ resetButton.addEventListener("click", () => {
 });
 for (const control of [swap, paper, unitSelect]) control.addEventListener("change", render);
 
+/** Show a new picture, whole, with no taps on it. */
+function usePhoto(next: Photo): void {
+  photo = next;
+  notice = "";
+  reset(state);
+  empty.hidden = true;
+  fit = fitContain(next.w, next.h, box.w, box.h);
+  layout();
+}
+
 /** Read the chosen file into an image. It never leaves the browser. */
 function load(input: HTMLInputElement): void {
   const file = input.files?.[0];
@@ -183,14 +212,12 @@ function load(input: HTMLInputElement): void {
   const next = new Image();
   next.onload = () => {
     URL.revokeObjectURL(url);
-    photo = { source: next, w: next.naturalWidth, h: next.naturalHeight };
-    reset(state);
-    empty.hidden = true;
-    layout();
+    usePhoto({ source: next, w: next.naturalWidth, h: next.naturalHeight });
   };
   next.onerror = () => {
     URL.revokeObjectURL(url);
-    step.textContent = "That file could not be opened as a photo. Try another one.";
+    notice = "That file could not be opened as a photo. Try another one.";
+    render();
   };
   next.src = url;
 }

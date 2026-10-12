@@ -6,30 +6,31 @@
   --muted: #b3b8c2;
   --line: #3a3f4a;
   --accent: #ffb000;
+  --warn: #ffd27a;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; }
 body {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  /* The photo's box has a height of its own, so it does not shrink when the
+     words under it grow. The panel scrolls instead. */
+  grid-template-rows: auto 52dvh minmax(0, 1fr);
   height: 100dvh;
   background: var(--bg);
   color: var(--text);
   font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
-header, footer {
-  background: var(--panel);
-  padding: 8px max(12px, env(safe-area-inset-left));
-}
-footer { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
-h1 { font-size: 16px; margin: 0 0 6px; }
+header { background: var(--panel); padding: 6px max(12px, env(safe-area-inset-left)); }
+h1 { font-size: 16px; margin: 0; }
+h2 { font-size: 14px; margin: 14px 0 4px; color: var(--muted); font-weight: 600; }
 .tag { color: var(--muted); font-weight: 400; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
 p { margin: 4px 0; }
 .small { color: var(--muted); font-size: 13px; }
+.problem { color: var(--warn); }
 
-button, .button, select {
+button, .button, select, input[type="number"] {
   min-height: 44px; /* comfortable for a thumb */
   padding: 0 14px;
   border: 1px solid var(--line);
@@ -39,13 +40,18 @@ button, .button, select {
   font: inherit;
 }
 .button { display: inline-flex; align-items: center; cursor: pointer; }
-.button:focus-within, button:focus-visible, select:focus-visible, input:focus-visible {
+.button:focus-within, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 button:disabled { opacity: 0.45; }
+button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 label { display: inline-flex; align-items: center; gap: 6px; }
 .check { min-height: 44px; }
+.check input { width: 22px; height: 22px; }
+summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--muted); }
+summary::before { content: "+"; width: 18px; }
+details[open] > summary::before { content: "\2212"; }
 .visually-hidden {
   position: absolute;
   width: 1px; height: 1px;
@@ -54,13 +60,15 @@ label { display: inline-flex; align-items: center; gap: 6px; }
   white-space: nowrap;
 }
 
-#stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+#stage { position: relative; min-height: 0; overflow: hidden; background: #000; }
 #photo {
   position: absolute; inset: 0;
   width: 100%; height: 100%;
   touch-action: none; /* taps and drags place points instead of scrolling */
   cursor: crosshair;
 }
+#photo.moving { cursor: grab; }
+#photo:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 #loupe {
   position: absolute; top: 8px; left: 8px;
   width: 132px; height: 132px;
@@ -77,9 +85,21 @@ label { display: inline-flex; align-items: center; gap: 6px; }
   color: var(--muted);
   pointer-events: none;
 }
-#result { display: block; font-size: 22px; font-weight: 650; }
-#result.problem { font-size: 15px; font-weight: 500; color: #ffd27a; }
-button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+#panel {
+  overflow-y: auto;
+  background: var(--panel);
+  padding: 4px max(12px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-bottom));
+}
 #zoom button { min-width: 44px; }
-#photo.moving { cursor: grab; }
-#photo:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#result { display: block; font-size: 22px; font-weight: 650; }
+#result.problem { font-size: 15px; font-weight: 500; }
+
+/* A wide or a sideways screen: photo on the left, panel on the right. */
+@media (min-aspect-ratio: 1/1) {
+  body {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) min(420px, 45vw);
+  }
+  header { grid-column: 1 / -1; }
+}

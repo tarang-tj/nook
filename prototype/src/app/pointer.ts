@@ -26,8 +26,10 @@ export type Change = "none" | "points" | "view";
 
 type Drag = {
   id: number;
-  /** Null when this press slides the photo. */
+  /** Null when this press slides the photo or does nothing. */
   handle: Handle | null;
+  /** This press slides the photo. */
+  pan: boolean;
   from: Tap;
   last: Tap;
   /** The press picked up a point that was already there. */
@@ -73,9 +75,9 @@ export function createPointer(host: Host) {
     const size = host.photo();
     if (!size || pinch) return "none";
     if (drag) return drag.id === e.id || e.type === "mouse" ? "none" : startPinch(drag, e);
-    const idle = { id: e.id, from: e, last: e, offset: { x: 0, y: 0 }, before: null };
+    const idle = { id: e.id, from: e, last: e, offset: { x: 0, y: 0 }, before: null, pan: false };
     if (host.panning()) {
-      drag = { ...idle, handle: null, grabbed: false, moving: true };
+      drag = { ...idle, handle: null, grabbed: false, moving: true, pan: true };
       return "view";
     }
     const at = photoPoint(e);
@@ -89,9 +91,10 @@ export function createPointer(host: Host) {
       return "points";
     }
     const handle = place(host.state, at);
-    if (!handle) return "none";
+    // With nothing left to place the press does nothing by itself, but it
+    // is remembered: it may be the first finger of a pinch.
     drag = { ...idle, handle, grabbed: false, moving: true };
-    return "points";
+    return handle ? "points" : "none";
   }
 
   function move(e: Tap): Change {
@@ -106,6 +109,7 @@ export function createPointer(host: Host) {
     const last = drag.last;
     drag.last = e;
     if (!drag.handle) {
+      if (!drag.pan) return "none";
       host.setView(panBy(host.view(), e.x - last.x, e.y - last.y, host.photo() as Size, host.box()));
       return "view";
     }

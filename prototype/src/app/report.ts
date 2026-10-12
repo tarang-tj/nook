@@ -4,18 +4,44 @@ import { measureFloorDistance } from "../measure/floor-distance";
 import { referenceById } from "../measure/references";
 import { degenerateReason, orderCorners } from "../measure/sheet";
 import type { Unit } from "../measure/units";
+import { sheetWords } from "./sheet-edges";
 import type { State } from "./state";
 
 /** The choices made with the controls, read off the page by main.ts. */
 export type Settings = { paper: string; swap: boolean; unit: Unit };
 
-export type Report = { step: string; result: string; problem: boolean; basis: string };
+/** What the page itself knows: whether a photo is loaded, and a message
+ * that must stay up until something replaces it (a file that would not open). */
+export type Page = { hasPhoto: boolean; notice: string };
 
-const problem = (step: string, text: string): Report => ({
+/** The one sentence that is always on screen, even with the long text folded away. */
+export const UNCHECKED = "Not checked against a tape measure or a real photo. The ± covers tap placement only.";
+
+export type Report = {
+  notice: string;
+  step: string;
+  result: string;
+  problem: boolean;
+  /** What the ± covers and leaves out, in full. */
+  basis: string;
+  /** The paper size and long side the page assumed for the sheet. */
+  sheet: string;
+};
+
+export function report(s: State, page: Page, settings: Settings): Report {
+  const words = wordsFor(s, page.hasPhoto, settings);
+  const sheet =
+    s.points.sheet.length === 4 ? sheetWords("Sheet", referenceById(settings.paper), settings.swap, settings.unit) : "";
+  return { ...words, notice: page.notice, sheet };
+}
+
+type Words = Omit<Report, "notice" | "sheet">;
+
+const problem = (step: string, text: string): Words => ({
   step, result: `No measurement. ${text}`, problem: true, basis: "",
 });
 
-export function report(s: State, hasPhoto: boolean, settings: Settings): Report {
+function wordsFor(s: State, hasPhoto: boolean, settings: Settings): Words {
   const blank = { result: "", problem: false, basis: "" };
   if (!hasPhoto) return { step: "Step 1 of 3: take or choose a photo.", ...blank };
   const { sheet, ends } = s.points;
@@ -26,7 +52,7 @@ export function report(s: State, hasPhoto: boolean, settings: Settings): Report 
     const why = degenerateReason(orderCorners(sheet));
     return why ? problem(step, `The four corners cannot be used: ${why}. Drag them or press Undo.`) : { step, ...blank };
   }
-  const step = "Drag any point to adjust it. Start over clears the points.";
+  const step = "Both spots are placed. Drag any point to adjust it, zoom in to place it better, or press Undo to place one again.";
   const outcome = measureFloorDistance({
     corners: sheet, a: ends[0], b: ends[1],
     reference: referenceById(settings.paper), unit: settings.unit, swapSides: settings.swap,

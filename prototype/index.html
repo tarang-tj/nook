@@ -4,36 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#14161a" />
-    <title>Nook prototype: measure a floor distance from a photo</title>
+    <title>Nook prototype: measure a floor from a photo</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <header>
-      <h1>Nook <span class="tag">prototype</span></h1>
-      <div class="row">
-        <label class="button">
-          Take photo
-          <input id="take" class="visually-hidden" type="file" accept="image/*" capture="environment" />
-        </label>
-        <label class="button">
-          Choose photo
-          <input id="choose" class="visually-hidden" type="file" accept="image/*" />
-        </label>
-        <label>
-          Paper
-          <select id="paper">
-            <option value="letter">US Letter</option>
-            <option value="a4">A4</option>
-          </select>
-        </label>
-        <label>
-          Units
-          <select id="unit">
-            <option value="cm">cm</option>
-            <option value="in">inches</option>
-          </select>
-        </label>
-      </div>
+      <h1>Nook <span class="tag">prototype, draft sample</span></h1>
     </header>
 
     <main id="stage">
@@ -51,7 +27,7 @@
       </p>
     </main>
 
-    <footer>
+    <section id="panel" aria-label="Controls and results">
       <div class="row" id="zoom">
         <button id="zoom-out" type="button" aria-label="Zoom out">&minus;</button>
         <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
@@ -59,19 +35,61 @@
         <button id="move" type="button" aria-pressed="false">Move photo</button>
       </div>
       <p id="zoom-text" class="small"></p>
+
+      <p id="notice" class="problem" role="alert" hidden></p>
       <p id="step" aria-live="polite"></p>
       <output id="result" aria-live="polite"></output>
-      <p id="basis" class="small"></p>
+      <p id="unchecked" class="small" hidden></p>
+      <details id="basis-box" hidden>
+        <summary>What the ± covers and leaves out</summary>
+        <p id="basis" class="small"></p>
+      </details>
+
       <div class="row">
         <button id="undo" type="button" disabled>Undo</button>
         <button id="reset" type="button" disabled>Start over</button>
-        <label class="check">
-          <input id="swap" type="checkbox" />
-          Sheet's long side is the one that looks shorter
+      </div>
+
+      <div class="row">
+        <label class="button">
+          Take photo
+          <input id="take" class="visually-hidden" type="file" accept="image/*" capture="environment" />
+        </label>
+        <label class="button">
+          Choose photo
+          <input id="choose" class="visually-hidden" type="file" accept="image/*" />
         </label>
       </div>
+
+      <h2>The sheet</h2>
+      <div class="row">
+        <label>
+          Paper
+          <select id="paper">
+            <option value="letter">US Letter</option>
+            <option value="a4">A4</option>
+          </select>
+        </label>
+        <label>
+          Units
+          <select id="unit">
+            <option value="cm">cm</option>
+            <option value="in">inches</option>
+          </select>
+        </label>
+      </div>
+      <label class="check">
+        <input id="swap" type="checkbox" />
+        Swap the sheet's long and short sides
+      </label>
+      <p id="sheet-words" class="small"></p>
+      <p class="small">
+        Tick the box if a long label in the photo sits on one of the paper's short sides. Nothing
+        else catches that mistake.
+      </p>
+
       <p class="small">Your photo stays on this device. Nothing is uploaded.</p>
-    </footer>
+    </section>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

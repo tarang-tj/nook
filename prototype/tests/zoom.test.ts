@@ -73,6 +73,20 @@ describe("zoom with fingers on the photo", () => {
     expect(page.pointer.busy()).toBe(false);
   });
 
+  it("pinch still works when every tap is already placed", () => {
+    const page = fakePage();
+    for (const p of [...letterInPhoto(), project({ x: -300, y: 400 }), project({ x: 700, y: 400 })]) page.tapPhoto(p);
+    const before = JSON.stringify(page.state.points);
+    page.pointer.down({ id: 1, x: 150, y: 100, type: "touch" });
+    page.pointer.down({ id: 2, x: 250, y: 100, type: "touch" });
+    page.pointer.move({ id: 2, x: 350, y: 100, type: "touch" });
+    page.pointer.up({ id: 2, x: 350, y: 100, type: "touch" });
+    page.pointer.up({ id: 1, x: 150, y: 100, type: "touch" });
+    expect(page.view().scale).toBeCloseTo(FIT.scale * 2, 9);
+    expect(JSON.stringify(page.state.points)).toBe(before);
+    expect(page.pointer.busy()).toBe(false);
+  });
+
   it("a second finger puts a picked-up point back where it was", () => {
     const page = fakePage();
     const a = project({ x: -300, y: 400 });
