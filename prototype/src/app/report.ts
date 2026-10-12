@@ -46,16 +46,33 @@ export type Report = {
   basis: string;
   /** The paper size and long side the page assumed for the sheet. */
   sheet: string;
+  /** The same for the second sheet, when there is one. */
+  second: string;
+  /** Which references the plane map was solved from. */
+  used: string;
 };
+
+/** Added to the basis when more than one reference is in use. */
+export const EXACT =
+  "With more than one reference, the floor's plane map is the one that misses every known size by the least. " +
+  "Each paper size and typed length is taken as exact: a wrong one is believed, not caught, and the ± does not cover it.";
 
 const ZOOM_HINT = "Taps made zoomed out count as far less exact: zoom in and drag each point onto its spot.";
 
 export function report(s: State, page: Page, set: Settings, solved: Solved | null, bars: Bars | null): Report {
+  const out = build(s, page, set, solved, bars);
+  if (out.basis && solved?.ok && solved.used.length > 1) out.basis = `${out.basis} ${EXACT}`;
+  return out;
+}
+
+function build(s: State, page: Page, set: Settings, solved: Solved | null, bars: Bars | null): Report {
   const out: Report = {
     notice: page.notice,
     step: stepText(s, page.hasPhoto),
     working: false, headline: "", problem: "", rows: [], verdicts: [], notes: [], truth: [], basis: "",
     sheet: s.points.sheet.length === 4 ? sheetWords("Sheet", referenceById(set.paper), set.swap, set.unit) : "",
+    second: s.points.second.length === 4 ? sheetWords("Second sheet", referenceById(set.paper2), set.swap2, set.unit) : "",
+    used: solved?.ok ? `Plane map solved from: ${solved.used.join(", ")}.` : "",
   };
   if (!page.hasPhoto || !solved) return out;
   if (!solved.ok) {

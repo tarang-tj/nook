@@ -104,6 +104,8 @@ li { margin: 3px 0; }
 .tabs button[aria-selected="true"] { border-color: var(--accent); color: var(--accent); font-weight: 650; }
 input[type="number"] { width: 84px; padding: 0 8px; }
 #plan svg { display: block; width: 100%; height: auto; border-radius: 8px; }
+.extra { border-left: 3px solid #ff7ad9; padding-left: 10px; margin: 8px 0; }
+#used { font-weight: 600; }
 #sample-box { border-left: 3px solid var(--accent); padding-left: 10px; margin: 6px 0; }
 
 /* A wide or a sideways screen: photo on the left, panel on the right. */

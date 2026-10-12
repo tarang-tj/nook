@@ -31,6 +31,17 @@ export function showPanel(words: Report, x: PanelExtras): void {
   el("basis-box").hidden = !words.basis;
   say("basis", words.basis);
   say("sheet-words", words.sheet);
+  say("second-words", words.second);
+  say("used", words.used);
+
+  // The extra references: a box for each one that is being added or is there.
+  const { second, span } = state.points;
+  const has = { second: state.adding === "second" || second.length > 0, span: state.adding === "span" || span.length > 0 };
+  el("second-box").hidden = !has.second;
+  el("span-box").hidden = !has.span;
+  el<HTMLButtonElement>("add-second").disabled = !x.hasPhoto || has.second;
+  el<HTMLButtonElement>("add-span").disabled = !x.hasPhoto || has.span;
+  el("span-unit").textContent = `${x.unit}, measured on the floor between the two K points`;
 
   // What belongs to which tool.
   el("fit-box").hidden = state.tool !== "fit" || !x.hasPhoto;

@@ -1,7 +1,11 @@
 // "Place the taps for me": put the made-up floor's taps down for whatever
 // the current tool is waiting for. Pure, so it can be tested.
-import { sampleTaps } from "../sample/floor";
+import { SAMPLE_TRUTH, sampleTaps } from "../sample/floor";
 import { closeRoom, place, target, type State } from "./state";
+
+/** What the made-up floor's extra references are, for the page to fill in
+ * once their taps have been placed for the person. */
+export const SAMPLE_EXTRAS = { paper2: SAMPLE_TRUTH.secondPaper, spanMm: SAMPLE_TRUTH.span };
 
 /** Place every tap the current tool still needs. Returns how many it placed. */
 export function placeSampleTaps(s: State): number {

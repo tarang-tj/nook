@@ -145,6 +145,51 @@
         else catches that mistake.
       </p>
 
+      <h2>Tighter accuracy (optional)</h2>
+      <p class="small">
+        One sheet pins the floor down well near itself and poorly far from it. A second known
+        size, lying out where you are measuring, tightens the far numbers.
+      </p>
+      <div class="row">
+        <button id="add-second" type="button">Add a second sheet</button>
+        <button id="add-span" type="button">Add a known length</button>
+      </div>
+      <div id="second-box" class="extra" hidden>
+        <div class="row">
+          <label>
+            Second sheet's paper
+            <select id="paper2">
+              <option value="letter">US Letter</option>
+              <option value="a4">A4</option>
+            </select>
+          </label>
+        </div>
+        <label class="check">
+          <input id="swap2" type="checkbox" />
+          Swap the second sheet's long and short sides
+        </label>
+        <p id="second-words" class="small"></p>
+        <button id="remove-second" type="button">Remove the second sheet</button>
+      </div>
+      <div id="span-box" class="extra" hidden>
+        <div class="row">
+          <label>
+            Its length
+            <input id="span-length" type="number" inputmode="decimal" min="0" step="any" />
+          </label>
+          <span id="span-unit" class="small"></span>
+        </div>
+        <button id="remove-span" type="button">Remove the known length</button>
+      </div>
+      <p id="used" hidden></p>
+      <p id="exact" class="small">
+        A paper size and a typed length are taken as exact. Nothing on this page checks them. If
+        one is wrong, the numbers near it are wrong with it, and their error bars will not show
+        it. The page refuses only when two references disagree by far more than tap error
+        explains, which catches a gross mistake near the first sheet and little else. No refusal
+        does not mean the references are right.
+      </p>
+
       <p class="small">Your photo stays on this device. Nothing is uploaded.</p>
     </section>
 

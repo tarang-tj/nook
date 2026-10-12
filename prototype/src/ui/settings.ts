@@ -11,13 +11,13 @@ export function readSettings(): Settings {
     paper: input("paper").value,
     swap: input("swap").checked,
     unit: isUnit(unit) ? unit : "cm",
-    paper2: "a4",
-    swap2: false,
-    spanLength: NaN,
+    paper2: input("paper2").value,
+    swap2: input("swap2").checked,
+    spanLength: input("span-length").valueAsNumber,
     thingWidth: input("thing-width").valueAsNumber,
     thingDepth: input("thing-depth").valueAsNumber,
   };
 }
 
 /** Redraw when any of these controls changes. */
-export const SETTING_IDS = ["swap", "paper", "unit", "thing-width", "thing-depth"];
+export const SETTING_IDS = ["swap", "paper", "unit", "thing-width", "thing-depth", "paper2", "swap2", "span-length"];

@@ -3,27 +3,30 @@
 import { csvOf, planOf } from "./app/exports";
 import { createLater } from "./app/later";
 import { barsOf, sceneOf, solve, type Bars } from "./app/numbers";
-import { createPointer, type Tap } from "./app/pointer";
+import { createPointer } from "./app/pointer";
 import { report, type Report } from "./app/report";
-import { placeSampleTaps } from "./app/sample-taps";
+import { placeSampleTaps, SAMPLE_EXTRAS } from "./app/sample-taps";
 import { sheetEdges } from "./app/sheet-edges";
-import { closeRoom, hasTaps, newState, reset, undo, type Tool } from "./app/state";
+import { closeRoom, hasTaps, newState, removeExtra, reset, undo, type Tool } from "./app/state";
 import { clampView, isFitted, zoomWords } from "./app/zoom";
 import { floorToPhoto } from "./measure/inverse";
 import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
 import type { Plan } from "./measure/plan";
 import { referenceById } from "./measure/references";
+import { fromMm } from "./measure/units";
 import { isMoving, wireTabs, wireView } from "./ui/controls";
 import { download, el } from "./ui/dom";
-import { draw, drawCross, drawLoupe, type Box, type Photo } from "./ui/draw";
+import { draw, drawCross, type Box, type Photo } from "./ui/draw";
 import { showPanel } from "./ui/panel";
 import { wirePhotoInputs } from "./ui/photo-input";
+import { wirePointer } from "./ui/pointer-events";
 import { readSettings, SETTING_IDS } from "./ui/settings";
 import { fitContain, type Fit } from "./ui/view";
 
 const stage = el("stage");
 const canvas = el<HTMLCanvasElement>("photo");
 const loupe = el<HTMLCanvasElement>("loupe");
+const input = (id: string) => el<HTMLInputElement>(id);
 
 const state = newState();
 let photo: Photo | null = null;
@@ -95,44 +98,7 @@ function render(): void {
   });
 }
 
-/** A pointer event as the pointer rules want it: canvas pixels, no browser types. */
-function tap(e: PointerEvent): Tap {
-  const r = canvas.getBoundingClientRect();
-  return { id: e.pointerId, x: e.clientX - r.left, y: e.clientY - r.top, type: e.pointerType };
-}
-
-function showLoupe(at: Tap): void {
-  const held = pointer.held();
-  loupe.hidden = !held;
-  if (!held || !photo) return;
-  // Keep the loupe out from under the finger.
-  loupe.classList.toggle("right", at.x < 170 && at.y < 170);
-  const ctx = loupe.getContext("2d");
-  if (ctx) drawLoupe(ctx, photo.source, held, view, loupe.width);
-}
-
-canvas.addEventListener("pointerdown", (e) => {
-  if (pointer.down(tap(e)) === "none") return;
-  try {
-    // Keep receiving moves if the finger slides off the photo.
-    canvas.setPointerCapture(e.pointerId);
-  } catch {
-    // Some browsers refuse capture for some pointers. Placing still works.
-  }
-  showLoupe(tap(e));
-  render();
-});
-canvas.addEventListener("pointermove", (e) => {
-  if (pointer.move(tap(e)) === "none") return;
-  showLoupe(tap(e));
-  render();
-});
-for (const [name, end] of [["pointerup", pointer.up], ["pointercancel", pointer.cancel]] as const)
-  canvas.addEventListener(name, (e) => {
-    end(tap(e));
-    showLoupe(tap(e));
-    render(); // the finger is up: this also books the error bars
-  });
+wirePointer(canvas, loupe, pointer, { photo: () => photo, view: () => view, render });
 for (const name of ["focus", "blur"]) canvas.addEventListener(name, render);
 
 wireView({
@@ -162,12 +128,23 @@ const act = (id: string, change: () => void) =>
 act("undo", () => undo(state));
 act("reset", () => {
   reset(state);
-  el<HTMLInputElement>("swap").checked = false;
+  input("swap").checked = input("swap2").checked = false;
 });
 act("close", () => closeRoom(state));
 act("turn-left", () => { state.turn = (state.turn + 165) % 180; });
 act("turn-right", () => { state.turn = (state.turn + 15) % 180; });
-act("sample-taps", () => placeSampleTaps(state));
+act("sample-taps", () => {
+  const before = { second: state.points.second.length, span: state.points.span.length };
+  placeSampleTaps(state);
+  // The made-up floor's own paper size and stick length, so the person need not know them.
+  if (state.points.second.length === 4 && before.second < 4) input("paper2").value = SAMPLE_EXTRAS.paper2;
+  if (state.points.span.length === 2 && before.span < 2)
+    input("span-length").value = String(Number(fromMm(SAMPLE_EXTRAS.spanMm, readSettings().unit).toFixed(2)));
+});
+act("add-second", () => { state.adding = "second"; });
+act("add-span", () => { state.adding = "span"; });
+act("remove-second", () => removeExtra(state, "second"));
+act("remove-span", () => removeExtra(state, "span"));
 for (const id of SETTING_IDS)
   for (const name of ["change", "input"]) el(id).addEventListener(name, render);
 
