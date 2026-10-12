@@ -3,7 +3,7 @@
 import { csvOf, planOf } from "./app/exports";
 import { createLater } from "./app/later";
 import { barsOf, sceneOf, solve, type Bars } from "./app/numbers";
-import { forNewPicture, withoutExtra } from "./app/picture-settings";
+import { forNewPicture, startPicture, withoutExtra, type Aside } from "./app/picture-settings";
 import { createPointer } from "./app/pointer";
 import { report, type Report } from "./app/report";
 import { placeSampleTaps, SAMPLE_EXTRAS } from "./app/sample-taps";
@@ -126,8 +126,14 @@ const act = (id: string, change: () => void) =>
     render();
   });
 act("undo", () => undo(state));
+/** The person's own first paper while the made-up floor shows its own. */
+let aside: Aside = null;
 /** The papers, swap boxes and known length belong to one picture: start each one clean. */
-const freshSettings = () => writePictureSettings(forNewPicture(readSettings(), sample));
+const freshSettings = () => {
+  const next = startPicture(readSettings(), sample, aside);
+  aside = next.aside;
+  writePictureSettings(next.set);
+};
 act("reset", () => {
   reset(state);
   freshSettings();

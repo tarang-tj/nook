@@ -2,7 +2,7 @@
 // long the known length is) must not carry over to the next picture, and the
 // made-up floor sets its own.
 import { describe, expect, it } from "vitest";
-import { forNewPicture, withoutExtra } from "../src/app/picture-settings";
+import { forNewPicture, startPicture, withoutExtra } from "../src/app/picture-settings";
 import { placeSampleTaps } from "../src/app/sample-taps";
 import { newState, type State, type Tool } from "../src/app/state";
 import { SAMPLE_TRUTH } from "../src/sample/floor";
@@ -40,6 +40,33 @@ describe("settings for a new picture", () => {
     const noSpan = withoutExtra(LEFT, "span");
     expect(noSpan.spanMm).toBeNaN();
     expect(noSpan).toMatchObject({ paper2: "a4", swap2: true });
+  });
+});
+
+describe("the first paper, across the made-up floor and back", () => {
+  it("is set aside when the made-up floor comes up and put back for the next photo", () => {
+    const onSample = startPicture(LEFT, true, null);
+    expect(onSample.set.paper).toBe("letter");
+    expect(onSample.aside).toEqual({ paper: "a4" });
+    const onPhoto = startPicture(onSample.set, false, onSample.aside);
+    expect(onPhoto.set.paper).toBe("a4");
+    expect(onPhoto.aside).toBeNull();
+  });
+
+  it("survives Start over and a second Try the sample while the made-up floor is up", () => {
+    let at = startPicture(LEFT, true, null);
+    at = startPicture(at.set, true, at.aside);
+    at = startPicture({ ...at.set, paper: "a4" }, true, at.aside); // changed by hand on the made-up floor
+    expect(at.set.paper).toBe("letter");
+    expect(startPicture(at.set, false, at.aside).set.paper).toBe("a4");
+    expect(startPicture({ ...SETTINGS, paper: "letter" }, false, startPicture(SETTINGS, true, null).aside).set.paper).toBe("letter");
+  });
+
+  it("from photo to photo the paper is the one showing, and the rest starts clean", () => {
+    const next = startPicture(LEFT, false, null);
+    expect(next.aside).toBeNull();
+    expect(next.set).toEqual(forNewPicture(LEFT, false));
+    expect(startPicture(LEFT, true, null).set).toEqual(forNewPicture(LEFT, true));
   });
 });
 
