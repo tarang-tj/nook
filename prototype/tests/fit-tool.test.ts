@@ -30,7 +30,7 @@ describe("Fit: one example of what a measured outline allows", () => {
     expect(say(60, 60)).toHaveLength(2); // one gap sentence (square), one inside sentence
     expect(say(0, 60)[0]).toMatch(/Cannot say: The size of the thing is missing or is not above zero/);
     expect(tell(s).words.basis).toMatch(/Floor only/);
-    expect(tell(s, { sample: true }).words.truth[0]).toBe("True value on this made-up floor: the gap between the two red crosses is 90 cm.");
+    expect(tell(s, { sample: true }).words.truth[0]).toBe("True value on this made-up floor, for the spots as tapped: the gap is 90 cm.");
   });
 
   it("says whether the thing's footprint is inside the outline, and follows it when it is dragged", () => {

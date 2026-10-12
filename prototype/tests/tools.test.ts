@@ -49,7 +49,7 @@ describe("Room: tap the corners in order and close the outline", () => {
     expect(words.basis).toMatch(/A wall here is the line where the wall meets the floor/);
     expect(words.basis).toMatch(/not yet been checked against a tape measure/);
     expect(words.truth[0]).toBe(
-      "True values on this made-up floor: walls 150, 150, 60, 100, 90, 250 cm, perimeter 800 cm, floor area 3.15 m².",
+      "True value on this made-up floor, for the spots as tapped: walls 150, 150, 60, 100, 90, 250 cm, perimeter 800 cm, floor area 3.15 m².",
     );
     expect(tell(page.state, {}, { unit: "in" }).words.rows[7].text).toMatch(/ft²$/);
   });

@@ -2,7 +2,7 @@
 // seconds with no paper, no room and no photo. Nothing here is a real room:
 // the floor is flat by construction and the camera is an ideal pinhole, the
 // same one the tests use (tests/scene.ts). Because we choose every position,
-// the true value can be printed beside the measured one.
+// the true value for whatever was tapped can be printed beside the measured one.
 //
 // This file is the geometry only. Drawing it is in ./draw.
 import type { Pt } from "../measure/homography";
@@ -24,6 +24,18 @@ export function projectFloor(floor: Pt): Pt {
   const forward = dy * Math.cos(TILT) + HEIGHT * Math.sin(TILT);
   const down = HEIGHT * Math.cos(TILT) - dy * Math.sin(TILT);
   return { x: CENTRE.x + (FOCAL * floor.x) / forward, y: CENTRE.y + (FOCAL * down) / forward };
+}
+
+/** The floor spot (mm) a photo pixel of the made-up photo shows: projectFloor
+ * backwards. The page drew this floor, so this is exact, with no plane map
+ * and no taps on a sheet in between. Null at or above the horizon. */
+export function floorOfPhoto(photo: Pt): Pt | null {
+  const u = (photo.x - CENTRE.x) / FOCAL;
+  const v = (photo.y - CENTRE.y) / FOCAL;
+  const below = v * Math.cos(TILT) + Math.sin(TILT);
+  if (!(below > 1e-9)) return null;
+  const dy = (HEIGHT * (Math.cos(TILT) - v * Math.sin(TILT))) / below;
+  return { x: u * (dy * Math.cos(TILT) + HEIGHT * Math.sin(TILT)), y: dy - BACK };
 }
 
 /** A sheet `long` by `short` mm centred on `centre`, turned by `turnDeg`. */

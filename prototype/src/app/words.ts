@@ -1,9 +1,11 @@
 // Small pieces of text the report is built from: a number with its bar, the
-// step line for each tool, and the true values of the made-up floor. Pure.
+// step line for each tool, and the true values on the made-up floor. Pure.
+import { dist, type Pt } from "../measure/homography";
 import { measured, type Measured } from "../measure/noise";
+import { outlineMeasures } from "../measure/outline";
 import type { Bar } from "../measure/spread";
 import { fromMm, type Unit } from "../measure/units";
-import { SAMPLE_TRUTH } from "../sample/floor";
+import { floorOfPhoto } from "../sample/floor";
 import { sideText } from "./sheet-edges";
 import { LIMIT, target, type State } from "./state";
 
@@ -57,19 +59,30 @@ export function stepText(s: State, hasPhoto: boolean): string {
     : "The gap is placed. Type the thing's width and depth. Drag any point to adjust it.";
 }
 
-/** The true values of the made-up floor for the chosen tool. */
+const TRUTH_LEAD = "True value on this made-up floor, for the spots as tapped:";
+
+/** How far apart two taps on the made-up floor really are, mm. */
+function apart(taps: Pt[]): number | null {
+  const [a, b] = taps.map(floorOfPhoto);
+  return taps.length === 2 && a && b ? dist(a, b) : null;
+}
+
+/** The true values on the made-up floor for the spots that were tapped, not
+ * for the painted marks: a tap anywhere else has a different true value, and
+ * an outline with no honest shape has none. */
 export function truthText(s: State, unit: Unit): string[] {
-  const t = SAMPLE_TRUTH;
-  if (s.tool === "distance")
-    return s.points.ends.length === 2 ? [`True value on this made-up floor: A to B is ${sideText(t.distance, unit)}.`] : [];
-  if (s.tool === "room")
-    return s.closed
-      ? [
-          `True values on this made-up floor: walls ${t.walls.map((w) => Number(fromMm(w, unit).toFixed(1))).join(", ")} ${unit}, ` +
-            `perimeter ${sideText(t.perimeter, unit)}, floor area ${areaText(t.area, unit)}.`,
-        ]
-      : [];
-  return s.points.gap.length === 2
-    ? [`True value on this made-up floor: the gap between the two red crosses is ${sideText(t.gap, unit)}.`]
-    : [];
+  if (s.tool === "room") {
+    if (!s.closed) return [];
+    const floor = s.points.room.map(floorOfPhoto);
+    if (!floor.every((p): p is Pt => p !== null)) return [];
+    const m = outlineMeasures(floor);
+    if (!m.ok) return [];
+    return [
+      `${TRUTH_LEAD} walls ${m.walls.map((w) => Number(fromMm(w, unit).toFixed(1))).join(", ")} ${unit}, ` +
+        `perimeter ${sideText(m.perimeter, unit)}, floor area ${areaText(m.area, unit)}.`,
+    ];
+  }
+  const mm = apart(s.tool === "distance" ? s.points.ends : s.points.gap);
+  if (mm === null) return [];
+  return [`${TRUTH_LEAD} ${s.tool === "distance" ? "A to B" : "the gap"} is ${sideText(mm, unit)}.`];
 }

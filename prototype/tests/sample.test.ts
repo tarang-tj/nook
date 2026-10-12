@@ -38,7 +38,7 @@ describe("the made-up sample floor", () => {
     expect(s.points.ends.map((p) => p.s)).toEqual([1.5, 1.5]);
     const { words } = tell(s, { sample: true });
     expect(words.headline).toBe("A to B: 100 ± 3 cm");
-    expect(words.truth).toEqual(["True value on this made-up floor: A to B is 100 cm."]);
+    expect(words.truth).toEqual(["True value on this made-up floor, for the spots as tapped: A to B is 100 cm."]);
     expect(tell(s, { sample: true }, { unit: "in" }).words.truth[0]).toContain("39.4 in");
     // A real photo has no known truth, and nothing is printed for one.
     expect(tell(s, { sample: false }).words.truth).toEqual([]);
