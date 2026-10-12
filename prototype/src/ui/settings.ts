@@ -42,9 +42,19 @@ export function readSettings(): Settings {
 }
 
 /** Fill a length box with a length the page knows, or empty it (NaN). */
-export function setLength(key: LengthKey, mm: number): void {
+function setLength(key: LengthKey, mm: number): void {
   held[key] = typedFrom(mm, shownUnit ?? unitNow());
   input(LENGTH_BOX[key]).value = held[key].text;
+}
+
+/** Put the settings that describe one picture back on the controls: both
+ * papers, both swap boxes and the known length. The rest is left alone. */
+export function writePictureSettings(set: Settings): void {
+  input("paper").value = set.paper;
+  input("swap").checked = set.swap;
+  input("paper2").value = set.paper2;
+  input("swap2").checked = set.swap2;
+  setLength("spanMm", set.spanMm);
 }
 
 /** Redraw when any of these controls changes. */

@@ -3,6 +3,7 @@
 import { csvOf, planOf } from "./app/exports";
 import { createLater } from "./app/later";
 import { barsOf, sceneOf, solve, type Bars } from "./app/numbers";
+import { forNewPicture, withoutExtra } from "./app/picture-settings";
 import { createPointer } from "./app/pointer";
 import { report, type Report } from "./app/report";
 import { placeSampleTaps, SAMPLE_EXTRAS } from "./app/sample-taps";
@@ -19,13 +20,12 @@ import { draw, drawCross, type Box, type Photo } from "./ui/draw";
 import { showPanel } from "./ui/panel";
 import { wirePhotoInputs } from "./ui/photo-input";
 import { wirePointer } from "./ui/pointer-events";
-import { readSettings, setLength, SETTING_IDS } from "./ui/settings";
+import { readSettings, SETTING_IDS, writePictureSettings } from "./ui/settings";
 import { fitContain, type Fit } from "./ui/view";
 
 const stage = el("stage");
 const canvas = el<HTMLCanvasElement>("photo");
 const loupe = el<HTMLCanvasElement>("loupe");
-const input = (id: string) => el<HTMLInputElement>(id);
 
 const state = newState();
 let photo: Photo | null = null;
@@ -126,24 +126,34 @@ const act = (id: string, change: () => void) =>
     render();
   });
 act("undo", () => undo(state));
+/** The papers, swap boxes and known length belong to one picture: start each one clean. */
+const freshSettings = () => writePictureSettings(forNewPicture(readSettings(), sample));
 act("reset", () => {
   reset(state);
-  input("swap").checked = input("swap2").checked = false;
+  freshSettings();
 });
 act("close", () => closeRoom(state));
 act("turn-left", () => { state.turn = (state.turn + 165) % 180; });
 act("turn-right", () => { state.turn = (state.turn + 15) % 180; });
 act("sample-taps", () => {
-  const before = { second: state.points.second.length, span: state.points.span.length };
+  const before = { sheet: state.points.sheet.length, second: state.points.second.length, span: state.points.span.length };
   placeSampleTaps(state);
-  // The made-up floor's own paper size and stick length, so the person need not know them.
-  if (state.points.second.length === 4 && before.second < 4) input("paper2").value = SAMPLE_EXTRAS.paper2;
-  if (state.points.span.length === 2 && before.span < 2) setLength("spanMm", SAMPLE_EXTRAS.spanMm);
+  // Taps placed for the person sit on the made-up floor's own sheets and
+  // stick, so those get the floor's own paper sizes and length with them.
+  const now = readSettings();
+  const own = forNewPicture(now, true);
+  if (state.points.sheet.length === 4 && before.sheet < 4) Object.assign(now, { paper: own.paper, swap: own.swap });
+  if (state.points.second.length === 4 && before.second < 4) Object.assign(now, { paper2: own.paper2, swap2: own.swap2 });
+  if (state.points.span.length === 2 && before.span < 2) now.spanMm = SAMPLE_EXTRAS.spanMm;
+  writePictureSettings(now);
 });
 act("add-second", () => { state.adding = "second"; });
 act("add-span", () => { state.adding = "span"; });
-act("remove-second", () => removeExtra(state, "second"));
-act("remove-span", () => removeExtra(state, "span"));
+for (const extra of ["second", "span"] as const)
+  act(`remove-${extra}`, () => {
+    removeExtra(state, extra);
+    writePictureSettings(withoutExtra(readSettings(), extra, sample));
+  });
 for (const id of SETTING_IDS)
   for (const name of ["change", "input"]) el(id).addEventListener(name, render);
 
@@ -160,6 +170,7 @@ function usePhoto(next: Photo, madeUp: boolean): void {
   sample = madeUp;
   notice = "";
   reset(state);
+  freshSettings();
   el("empty").hidden = true;
   view = fitContain(next.w, next.h, box.w, box.h);
   layout();

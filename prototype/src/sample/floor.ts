@@ -77,6 +77,8 @@ export const SAMPLE_TRUTH = {
   area: room.area,
   gap: dist(SAMPLE_FLOOR.gap[0], SAMPLE_FLOOR.gap[1]),
   span: dist(SAMPLE_FLOOR.span[0], SAMPLE_FLOOR.span[1]),
+  /** The paper the first sheet and the far sheet are painted as. */
+  paper: "letter",
   secondPaper: "a4",
 };
 
