@@ -52,3 +52,13 @@ describe("the made-up sample floor", () => {
     expect(s.points.ends).toHaveLength(2);
   });
 });
+
+describe("the sentence that is always on screen under a result", () => {
+  it("says nothing was checked, and states the tap assumption the ± rests on", async () => {
+    const { UNCHECKED } = await import("../src/app/report");
+    const { TAP_SIGMA_SCREEN_PX } = await import("../src/measure/monte-carlo");
+    expect(UNCHECKED).toMatch(/^Not checked against a tape measure or a real photo\. /);
+    expect(UNCHECKED).toContain(`about ${TAP_SIGMA_SCREEN_PX} screen pixels off its spot`);
+    expect(UNCHECKED).toMatch(/assumption.*a tap further off can leave the true value outside the ±\.$/);
+  });
+});

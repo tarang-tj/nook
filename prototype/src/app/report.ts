@@ -2,7 +2,7 @@
 // there is none. Pure: the page only copies these strings onto the screen.
 import { FIT_BASIS, fitVerdict, insideOutline } from "../measure/fit";
 import { formatMeasured } from "../measure/format";
-import { BASIS } from "../measure/monte-carlo";
+import { BASIS, TAP_SIGMA_SCREEN_PX } from "../measure/monte-carlo";
 import type { Measured } from "../measure/noise";
 import { OUTLINE_BASIS } from "../measure/outline";
 import { referenceById } from "../measure/references";
@@ -18,8 +18,15 @@ export type { Settings } from "./numbers";
  * replaces it (a file that would not open). */
 export type Page = { hasPhoto: boolean; notice: string; sample?: boolean };
 
-/** The one sentence that is always on screen, even with the long text folded away. */
-export const UNCHECKED = "Not checked against a tape measure or a real photo. The ± covers tap placement only.";
+/** Said wherever a number from this page can end up: on screen and in both saved files. */
+export const NOT_CHECKED = "Not checked against a tape measure or a real photo.";
+
+/** The words that are always on screen under a result, even with the long
+ * text folded away. They name the assumption the ± stands on, because a tap
+ * a few pixels looser than it leaves the true value outside the bar. */
+export const UNCHECKED =
+  `${NOT_CHECKED} The ± covers tap placement only, and takes each tap to land about ${TAP_SIGMA_SCREEN_PX} screen pixels off its spot. ` +
+  "That is an assumption: a tap further off can leave the true value outside the ±.";
 
 /** One number in a list: its bar, or the refusal in words. */
 export type Row = { name: string; measured: Measured | null; text: string };
