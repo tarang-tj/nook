@@ -7,7 +7,7 @@ Nook is our BUS 444 (UW Bothell, Autumn 2026) team project, described on the tea
 ## Status
 
 - A shared place for the team's work, with draft notes written as options and open questions.
-- A small web prototype, a draft sample, that measures things on a floor from one photo: a distance, a room outline with a plan from above, and a simple "will it fit" example. It is something to react to, not a product direction. It has been run in a laptop browser, at phone size and at desktop size, on made-up pictures. It has never been tried on a real phone, a real photo or against a tape measure.
+- A small web prototype, a draft sample, that measures things on a floor from one photo: a distance, a room outline with a plan from above, and a simple "will it fit" example. It is something to react to, not a product direction. It has been driven by script in a headless laptop browser (Chromium), at phone size and at desktop size, on made-up pictures. Nobody has used it by hand on a phone. It has never been tried on a real phone, a real photo or against a tape measure.
 - No product decisions are recorded here. See [docs/decisions](docs/decisions/README.md) for how to record one.
 
 ## Run the prototype
@@ -46,10 +46,10 @@ Lay one sheet of US Letter or A4 paper flat on the floor. Take a photo with the 
 | Tab | What you do | What you get |
 | --- | --- | --- |
 | Distance | Tap two spots on the floor. | The distance between them, with an error bar. |
-| Room | Tap the corners where the walls meet the floor, in order, going round. Tap the first corner again, or press "Close outline". | Each wall, the perimeter and the floor area, each with an error bar or the reason there is none. A plan from above. Buttons that save the plan as an SVG file and the walls as a CSV file. |
+| Room | Tap the corners where the walls meet the floor, in order, going round. Tap the first corner again, or press "Close outline". | Each wall, the perimeter and the floor area, each with an error bar or the reason there is none. A plan from above, drawn only when every wall has a number. Buttons that save the plan as an SVG file and the walls as a CSV file. Every row of the CSV says it is a draft that was not checked. |
 | Fit | Tap the two sides of a gap and type a width and a depth. If you closed an outline on the Room tab, drag the dashed box on the photo. | "Fits", "does not fit" or "too close to call" for the gap, and whether the box is inside the outline. Floor only: it says nothing about height. This tab is one example of what a measured outline allows, not the point of the sample. |
 
-Under "Tighter accuracy" you can add a second sheet (four more taps) or one known length (two taps and a typed length). They narrow the error bars far from the first sheet. The page takes a paper size and a typed length as exact and does not check them.
+Under "Tighter accuracy" you can add a second sheet (four more taps) or one known length (two taps and a typed length). In made-up scenes they narrowed the error bars far from the first sheet. Whether they do in a real photo is not known. The page takes a paper size and a typed length as exact and does not check them.
 
 Every result comes with words that say what its error bar covers and leaves out. Nothing has been checked against a tape measure. Your photo stays on your device. Nothing is uploaded. The SVG and CSV files are made in the browser.
 

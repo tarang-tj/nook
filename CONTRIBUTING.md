@@ -69,6 +69,6 @@ When the team decides something, add a file under [docs/decisions](docs/decision
 
 The first version of the prototype was written by TJ with AI assistance. Check the course policy before any of it is used in graded work.
 
-The same holds for everything added to the prototype on 2026-10-12: the zoom and pan, the press rules for touch, the made-up sample floor, the Room and Fit tabs, the plan and its SVG and CSV files, the second sheet and known length, and the tests for all of them. All of it was written by TJ with AI assistance. So were the edits made the same day to the README, the product brief and the open questions. None of it has been reviewed by a teammate yet. Check the course policy before any of it is used in graded work.
+The same holds for everything added to the prototype on 2026-10-12: the zoom and pan, the press rules for touch, the made-up sample floor, the Room and Fit tabs, the plan and its SVG and CSV files, the second sheet and known length, the changes made after a review of the sample the same day, and the tests for all of them. All of it was written by TJ with AI assistance. So were the edits made the same day to the README, the product brief and the open questions. None of it has been reviewed by a teammate yet. Check the course policy before any of it is used in graded work.
 
 Much of the measuring code is adapted from TJ's own SPECTRA project, as the comment at the top of each file says. What that means for a licence is an open question in [docs/open-questions.md](docs/open-questions.md).

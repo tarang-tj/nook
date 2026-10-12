@@ -46,7 +46,7 @@ The prototype grew four ways in one go so the team could see them side by side: 
 | Is a prototype like this useful to the team at all at this stage, or is it ahead of the customer interviews? | The team |
 | The Fit tab builds the original pitch line ("know it fits before you move it"), which the README marks as draft wording. Should it stay in the sample, given that it could read as the product? | The team |
 | The Room tab measures where walls meet the floor, which furniture usually hides. Can those corners be seen in a photo of a real, lived-in room? | Anyone with a room and a phone |
-| Is a plan with error bars of several percent useful to anyone? For what? | The team, from interviews |
+| Is a plan with error bars like these useful to anyone? For what? In made-up scenes with one sheet the bars ran from a few percent near the sheet to tens of percent on the far walls. Nothing is known about a real photo. | The team, from interviews |
 | Would anyone lay down a second sheet of paper or measure one length with a tape to get a tighter number? If they have a tape, why would they use this? | The team, from interviews |
 | The page takes a paper size and a typed length as exact and cannot tell when one is wrong. Is that acceptable, and how should it be said to a user? | The team |
 | The page does not know which side of the sheet is long and relies on a person noticing the labels. Is that good enough, or does it need to work that out itself? | Whoever works on the prototype next |

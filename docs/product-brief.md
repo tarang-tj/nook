@@ -18,15 +18,15 @@ What it does (draft sample, extended 2026-10-12 so the team has more to react to
 
 - Runs in a phone or laptop browser. Nothing to install on the phone.
 - Takes one photo of a floor with one sheet of US Letter or A4 paper lying on it. You tap the four corners of the sheet. The page writes on each edge the length it has assumed for it.
-- Has a "Try the sample" button that draws a made-up floor (not a photo of a real room) and can place the taps for you. Because the floor is made up, the page prints the true value beside its own answer.
+- Has a "Try the sample" button that draws a made-up floor (not a photo of a real room) and can place the taps for you. Because the page drew the floor, it knows where on it each tap really is, and it prints the true value for the spots as tapped beside its own answer.
 - Zooms and slides the photo (pinch, mouse wheel, buttons, keyboard), so a tap can be placed more exactly. A tap keeps the uncertainty of the zoom it was made at.
 - Has three tabs over the same photo and the same sheet:
   - **Distance:** tap two spots, read the distance between them.
-  - **Room:** tap the corners of an outline on the floor in order and close it. It lists each wall, the perimeter and the floor area, draws a plan from above, and saves the plan as an SVG file and the walls as a CSV file. Both files are made in the browser.
+  - **Room:** tap the corners of an outline on the floor in order and close it. It lists each wall, the perimeter and the floor area, draws a plan from above when every wall has a number, and saves the plan as an SVG file and the walls as a CSV file. Both files are made in the browser, and both say they are a draft that was not checked.
   - **Fit:** one example of what a measured outline allows, not the point of the sample. Type a width and a depth. It says "fits", "does not fit" or "too close to call" for a gap between two tapped spots, and whether the thing's footprint, dragged on the photo, is inside the room outline.
 - Optionally takes a second sheet (four more taps) or one known length (two taps and a typed length), and solves the floor from all of them together. It shows which of them it used.
 - Shows every number with an error bar, in cm or inches, and says in words what the bar covers and what it leaves out.
-- When it cannot give an honest number, it says why and shows no number.
+- When it cannot give an honest number, it says why and shows none. In made-up scenes this was checked for a distance, a wall, the perimeter, the area, a gap, the plan (not drawn unless every wall has a number) and the Fit tab's inside verdict (not given when a wall of the outline has no number). It has not been checked beyond those.
 - The photo never leaves the device.
 
 What it does not do:
@@ -44,8 +44,8 @@ What we know about its accuracy, and how we know:
 
 - **It has never been tried on a real phone, a real photo or against a tape measure.** Everything below comes from made-up scenes, where the camera is ideal and the floor is perfectly flat. Treat every number the page shows as unproven until someone checks it with a tape.
 - The maths is tested against made-up scenes where the true answer is known. With exact taps it returns the true values. The tests are in [`prototype/tests/`](../prototype/tests/).
-- The error bar comes from simulating slightly misplaced taps (about 1.5 screen pixels off, which is an assumption, not a measurement of real fingers). It covers tap placement only.
-- Zoom matters more than anything else on a phone. Fitted to a phone screen, one screen pixel covers about eight photo pixels, so a careful tap is still about 12 photo pixels off, and the page often refuses to give a number. Zoomed right in, the same tap is about 1.5 photo pixels off.
+- The error bar comes from simulating slightly misplaced taps (about 1.5 screen pixels off, which is an assumption, not a measurement of real fingers). It covers tap placement only. A tap further off than that can leave the true value outside the bar, and the page says so under every result.
+- Zoom matters more than anything else on a phone. Fitted to a phone screen, one screen pixel covers several photo pixels (the page said 9.1 for a 3000 by 4000 picture in a 390 by 844 window), so a careful tap is still about 14 photo pixels off, and the page often refuses to give a number. Zoomed right in, the same tap is about 1.5 photo pixels off.
 - The bar grows as the spots get further from the sheet. That is why the second sheet and the known length exist.
 - How often the bar holds the truth, counted in a made-up scene by retaking the same simulated photo a few hundred times with every tap moved:
   - One sheet, a distance near the sheet, careful taps (1.5 photo pixels): the bar held the true value in 280 of 300 retakes in a made-up scene. Test: `prototype/tests/spread.test.ts`.
