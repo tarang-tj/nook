@@ -65,6 +65,20 @@ export function draw(
   ends.forEach((p, i) => ring(ctx, toScreen(fit, p), FLOOR, "AB"[i]));
 }
 
+/** A cross in the middle of the photo box: where Enter places a point when
+ * the photo is being driven from the keyboard. */
+export function drawCross(ctx: CanvasRenderingContext2D, box: Box): void {
+  const c = { x: box.w / 2, y: box.h / 2 };
+  for (const [width, colour] of [[4, "rgba(0,0,0,0.7)"], [2, "#fff"]] as const) {
+    ctx.lineWidth = width;
+    ctx.strokeStyle = colour;
+    ctx.beginPath();
+    ctx.moveTo(c.x - 14, c.y); ctx.lineTo(c.x - 3, c.y); ctx.moveTo(c.x + 3, c.y); ctx.lineTo(c.x + 14, c.y);
+    ctx.moveTo(c.x, c.y - 14); ctx.lineTo(c.x, c.y - 3); ctx.moveTo(c.x, c.y + 3); ctx.lineTo(c.x, c.y + 14);
+    ctx.stroke();
+  }
+}
+
 /** The loupe: the photo around `p`, magnified, with a crosshair on the spot. */
 export function drawLoupe(
   ctx: CanvasRenderingContext2D,

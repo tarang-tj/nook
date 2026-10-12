@@ -37,7 +37,12 @@
     </header>
 
     <main id="stage">
-      <canvas id="photo" role="img" aria-label="Your photo. Tap or click to place points."></canvas>
+      <canvas
+        id="photo"
+        tabindex="0"
+        role="img"
+        aria-label="Your photo. Tap or click to place points. With the keyboard: plus and minus zoom, 0 fits, arrows slide, Enter places a point at the cross in the middle."
+      ></canvas>
       <canvas id="loupe" width="132" height="132" hidden aria-hidden="true"></canvas>
       <p id="empty">
         Lay one sheet of paper flat on the floor. Take a photo with the whole sheet and the two
@@ -47,6 +52,13 @@
     </main>
 
     <footer>
+      <div class="row" id="zoom">
+        <button id="zoom-out" type="button" aria-label="Zoom out">&minus;</button>
+        <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+        <button id="zoom-fit" type="button">Fit</button>
+        <button id="move" type="button" aria-pressed="false">Move photo</button>
+      </div>
+      <p id="zoom-text" class="small"></p>
       <p id="step" aria-live="polite"></p>
       <output id="result" aria-live="polite"></output>
       <p id="basis" class="small"></p>

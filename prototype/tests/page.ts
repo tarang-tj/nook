@@ -13,7 +13,11 @@ export const PHONE_BOX = { w: 390, h: 511 };
 export function fakePage(box = PHONE_BOX, tool: Tool = "distance") {
   const state: State = newState(tool);
   let view: Fit = fitContain(PHOTO.w, PHOTO.h, box.w, box.h);
-  const host: Host = { state, photo: () => PHOTO, view: () => view };
+  let panning = false;
+  const host: Host = {
+    state, photo: () => PHOTO, box: () => box, view: () => view,
+    setView: (next) => { view = next; }, panning: () => panning,
+  };
   const pointer = createPointer(host);
   let id = 0;
   /** Where a photo pixel is on the canvas right now. */
@@ -22,6 +26,7 @@ export function fakePage(box = PHONE_BOX, tool: Tool = "distance") {
     state, pointer, screen,
     view: () => view,
     setView: (next: Fit) => { view = next; },
+    setPanning: (on: boolean) => { panning = on; },
     /** Press and lift on one spot (canvas px), as a plain tap does. */
     tap(at: Pt, type = "touch") {
       id++;
