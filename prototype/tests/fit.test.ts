@@ -155,33 +155,34 @@ describe("calibration: how often is the verdict wrong?", () => {
   it("gap, taps 1.5 photo pixels off: 1 wrong call in 300 retakes for a thing 2 cm too big, 0 for one 2 cm smaller", () => {
     const [easy, justFits, justTooBig, hopeless] = gaps(1.5, [700, 780, 820, 900]);
     expect(easy).toEqual({ fits: 300 });
-    // 2 cm smaller than the gap: fits 44, too close 256, never "does not fit".
+    // 2 cm smaller than the gap: fits 40, too close 260, never "does not fit".
     expect(justFits["does not fit"] ?? 0).toBe(0);
     expect(justFits.fits).toBeGreaterThan(20);
-    // 2 cm bigger: does not fit 38, too close 261, and "fits" once.
+    // 2 cm bigger: does not fit 11, too close 288, and "fits" once. The call
+    // is made on the bar as written, which is rounded outward, so it is rarer.
     expect(justTooBig.fits ?? 0).toBeLessThanOrEqual(7); // 2.5% of 300, one side of a 2 sd bar
-    expect(justTooBig["does not fit"]).toBeGreaterThan(20);
-    // 10 cm bigger: does not fit 296, too close 4.
-    expect(hopeless["does not fit"]).toBeGreaterThan(285);
+    expect(justTooBig["does not fit"]).toBeGreaterThan(5);
+    // 10 cm bigger: does not fit 290, too close 10.
+    expect(hopeless["does not fit"]).toBeGreaterThan(280);
     expect(hopeless.fits ?? 0).toBe(0);
   }, 60000);
 
-  it("gap, taps 6 photo pixels off: 6 wrong calls in 300 retakes for a thing 2 cm smaller, and it mostly declines to call", () => {
+  it("gap, taps 6 photo pixels off: 3 wrong calls in 300 retakes for a thing 2 cm smaller, and it mostly declines to call", () => {
     const [easy, justFits, justTooBig, hopeless] = gaps(6, [500, 780, 820, 1100]);
-    // 30 cm smaller: fits 290, too close 10.
-    expect(easy.fits).toBeGreaterThan(280);
+    // 30 cm smaller: fits 274, too close 26.
+    expect(easy.fits).toBeGreaterThan(260);
     expect(easy["does not fit"] ?? 0).toBe(0);
-    // 2 cm smaller: too close 294, and "does not fit" 6 times (2 in 100).
+    // 2 cm smaller: too close 297, and "does not fit" 3 times (1 in 100).
     expect(justFits["does not fit"] ?? 0).toBeLessThanOrEqual(7);
     expect(justFits["too close to call"]).toBeGreaterThan(285);
-    // 2 cm bigger: too close 286, does not fit 14, never "fits".
+    // 2 cm bigger: too close 289, does not fit 11, never "fits".
     expect(justTooBig.fits ?? 0).toBe(0);
-    // 30 cm bigger: does not fit 188, too close 112, never "fits".
+    // 30 cm bigger: does not fit 102, too close 198, never "fits".
     expect(hopeless.fits ?? 0).toBe(0);
-    expect(hopeless["does not fit"]).toBeGreaterThan(150);
+    expect(hopeless["does not fit"]).toBeGreaterThan(90);
   }, 60000);
 
-  it("thing inside the room, taps 1.5 photo pixels off: the bar holds the true room in 188 of 200 retakes, 1 wrong call in 200 each way", () => {
+  it("thing inside the room, taps 1.5 photo pixels off: the bar holds the true room in 188 of 200 retakes, 1 wrong call in 400", () => {
     // 900 by 600 mm, turned, with 181.4 mm to the nearest wall in truth.
     const thing = footprint({ x: 100, y: 1000 }, 900, 600, 0.3);
     const truth = clearance(thing, ROOM_ON_FLOOR);
@@ -207,15 +208,15 @@ describe("calibration: how often is the verdict wrong?", () => {
     expect(held).toBeLessThan(200);
     const [anywhere, needs160, needs200, needs260] = said.map(tally);
     expect(anywhere).toEqual({ inside: 200 });
-    // 2 cm less than there is: inside 27, too close 172, "outside" once.
+    // 2 cm less than there is: inside 24, too close 176, never "outside".
     expect(needs160.outside ?? 0).toBeLessThanOrEqual(5); // 2.5% of 200
     expect(needs160.inside).toBeGreaterThan(10);
-    // 2 cm more than there is: outside 21, too close 178, "inside" once.
+    // 2 cm more than there is: outside 9, too close 190, "inside" once.
     expect(needs200.inside ?? 0).toBeLessThanOrEqual(5);
-    expect(needs200.outside).toBeGreaterThan(10);
-    // 8 cm more: outside 162, too close 38, never "inside".
+    expect(needs200.outside).toBeGreaterThan(4);
+    // 8 cm more: outside 141, too close 59, never "inside".
     expect(needs260.inside ?? 0).toBe(0);
-    expect(needs260.outside).toBeGreaterThan(150);
+    expect(needs260.outside).toBeGreaterThan(130);
   }, 60000);
 });
 

@@ -6,17 +6,17 @@
 // Height is not here: one photo and a flat sheet cannot see it, so a thing
 // that fits on the floor may still not fit under a shelf.
 import type { Pt } from "./homography";
-import { formatMeasured } from "./format";
+import { formatMeasured, roundOutward } from "./format";
 import { measured } from "./noise";
 import { outlineProblem, segmentsCross } from "./outline";
 import type { Bar } from "./spread";
-import { fromMm, type Unit } from "./units";
+import { fromMm, toMm, type Unit } from "./units";
 
 /** What a verdict rests on, word for word. The counts are from
  * tests/fit.test.ts, which retakes a made-up scene 300 times. */
 export const FIT_BASIS =
   "Floor only: this compares sizes on the floor and says nothing about height, doors or stairs. " +
-  "It says fits or does not fit only when the whole error bar is on one side, and too close to call otherwise. " +
+  "It says fits or does not fit only when the whole error bar, as written, is on one side, and too close to call otherwise. " +
   "In simulated retakes of a made-up scene, a thing 2 cm off the true gap got the wrong call in at most 2 retakes in 100. " +
   "The error bar covers tap placement only, and this method has not yet been checked against a tape measure.";
 
@@ -35,11 +35,21 @@ const withError = (mm: number, errorMm: number, unit: Unit): string =>
 const honest = (gap: Gap | Bar): gap is { value: number; error: number } =>
   gap.value !== null && Number.isFinite(gap.value) && Number.isFinite(gap.error) && gap.error >= 0;
 
+/** The bar as it is written in the sentence, back in mm. It is never narrower
+ * than the bar worked out, and the verdict is decided on it, so the words
+ * never disagree with the figures printed beside them. */
+function written(mm: number, errorMm: number, unit: Unit): { value: number; error: number } {
+  if (errorMm === 0) return { value: mm, error: 0 };
+  const shown = roundOutward(fromMm(mm, unit), fromMm(errorMm, unit));
+  return { value: toMm(shown.value, unit), error: toMm(shown.error, unit) };
+}
+
 /** Compare a need with what is there. `yes` only when even the low end of the
  * bar is enough, `no` only when even the high end is not. */
 function compare<Word extends string>(
-  have: number, error: number, need: number, yes: Word, no: Word, lead: string, unit: Unit,
+  worked: number, workedError: number, need: number, yes: Word, no: Word, lead: string, unit: Unit,
 ): Verdict<Word> {
+  const { value: have, error } = written(worked, workedError, unit);
   if (have - error >= need)
     return { verdict: yes, spareMm: have - error - need, sentence: `${lead}: ${yes}, with at least ${plain(have - error - need, unit)} to spare.` };
   if (have + error < need)
