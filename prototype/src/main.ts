@@ -1,12 +1,12 @@
-// The page: load a photo, collect six taps, show the distance.
-// The maths lives in ./measure. Drawing lives in ./ui/view.
-import type { Pt } from "./measure/homography";
-import { measureFloorDistance } from "./measure/floor-distance";
-import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
-import { referenceById } from "./measure/references";
-import { degenerateReason, orderCorners } from "./measure/sheet";
-import { isUnit, type Unit } from "./measure/units";
-import { draw, drawLoupe, fitContain, nearest, toImage, type Fit } from "./ui/view";
+// The page: load a photo, pass taps to the pointer rules, show the words.
+// The maths lives in ./measure, the rules in ./app, drawing in ./ui.
+import { createPointer, type Tap } from "./app/pointer";
+import { report } from "./app/report";
+import { hasTaps, newState, reset, undo } from "./app/state";
+import { orderCorners } from "./measure/sheet";
+import { isUnit } from "./measure/units";
+import { draw, drawLoupe, type Box, type Photo } from "./ui/draw";
+import { fitContain, type Fit } from "./ui/view";
 
 const el = <T extends HTMLElement>(id: string): T => {
   const node = document.getElementById(id);
@@ -20,153 +20,91 @@ const empty = el<HTMLElement>("empty");
 const step = el<HTMLElement>("step");
 const result = el<HTMLOutputElement>("result");
 const basis = el<HTMLElement>("basis");
-const undo = el<HTMLButtonElement>("undo");
-const reset = el<HTMLButtonElement>("reset");
+const undoButton = el<HTMLButtonElement>("undo");
+const resetButton = el<HTMLButtonElement>("reset");
 const swap = el<HTMLInputElement>("swap");
 const paper = el<HTMLSelectElement>("paper");
 const unitSelect = el<HTMLSelectElement>("unit");
 
-const MAX_POINTS = 6; // four sheet corners, then two floor points
-const GRAB_RADIUS_PX = 28; // how close (screen px) a press must be to pick up a point
-
-let img: HTMLImageElement | null = null;
+const state = newState();
+let photo: Photo | null = null;
 let fit: Fit = { scale: 1, dx: 0, dy: 0 };
-let box = { w: 1, h: 1, dpr: 1 };
-let points: Pt[] = [];
-/** The point being placed or moved, and the finger's offset from it. */
-let held: { index: number; id: number; ox: number; oy: number } | null = null;
+let box: Box = { w: 1, h: 1, dpr: 1 };
+const pointer = createPointer({ state, photo: () => photo, view: () => fit });
 
 function layout(): void {
   const r = stage.getBoundingClientRect();
   box = { w: Math.max(1, r.width), h: Math.max(1, r.height), dpr: window.devicePixelRatio || 1 };
   canvas.width = Math.round(box.w * box.dpr);
   canvas.height = Math.round(box.h * box.dpr);
-  if (img) fit = fitContain(img.naturalWidth, img.naturalHeight, box.w, box.h);
+  if (photo) fit = fitContain(photo.w, photo.h, box.w, box.h);
   render();
 }
 
 function render(): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  if (!img) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  } else {
-    const ordered = points.length >= 4 ? orderCorners(points.slice(0, 4)) : null;
-    draw(ctx, img, fit, points, ordered, box);
-  }
-  report();
-}
+  const { sheet, ends } = state.points;
+  if (!photo) ctx.clearRect(0, 0, canvas.width, canvas.height);
+  else draw(ctx, photo, fit, sheet, ends, sheet.length === 4 ? orderCorners(sheet) : null, box);
 
-/** The words under the photo: what to do next, and the result or the reason. */
-function report(): void {
-  const n = points.length;
-  undo.disabled = n === 0;
-  reset.disabled = n === 0;
-  result.className = "";
-  result.textContent = "";
-  basis.textContent = "";
-  if (!img) {
-    step.textContent = "Step 1 of 3: take or choose a photo.";
-    return;
-  }
-  if (n < 4) {
-    step.textContent = `Step 2 of 3: tap the four corners of the sheet (${n} of 4). Drag a point to adjust it.`;
-    return;
-  }
-  const why = degenerateReason(orderCorners(points.slice(0, 4)));
-  if (n < 6) {
-    step.textContent = `Step 3 of 3: tap the two spots on the floor to measure between (${n - 4} of 2).`;
-    if (why) problem(`The four corners cannot be used: ${why}. Drag them or press Undo.`);
-    return;
-  }
-  step.textContent = "Drag any point to adjust it. Start over clears the points.";
-  const unit: Unit = isUnit(unitSelect.value) ? unitSelect.value : "cm";
-  const outcome = measureFloorDistance({
-    corners: points.slice(0, 4),
-    a: points[4],
-    b: points[5],
-    reference: referenceById(paper.value),
-    unit,
-    swapSides: swap.checked,
+  undoButton.disabled = resetButton.disabled = !hasTaps(state);
+  const words = report(state, !!photo, {
+    paper: paper.value,
+    swap: swap.checked,
+    unit: isUnit(unitSelect.value) ? unitSelect.value : "cm",
   });
-  if (!outcome.ok) return problem(outcome.reason);
-  result.textContent = `A to B: ${outcome.text}`;
-  basis.textContent = (outcome.warning ? `${outcome.warning} ` : "") + outcome.measured.basis;
+  step.textContent = words.step;
+  result.className = words.problem ? "problem" : "";
+  result.textContent = words.result;
+  basis.textContent = words.basis;
 }
 
-function problem(text: string): void {
-  result.className = "problem";
-  result.textContent = `No measurement. ${text}`;
-}
-
-/** A pointer position as a photo pixel, kept inside the photo. */
-function photoPoint(e: PointerEvent, ox = 0, oy = 0): Pt {
+/** A pointer event as the pointer rules want it: canvas pixels, no browser types. */
+function tap(e: PointerEvent): Tap {
   const r = canvas.getBoundingClientRect();
-  const p = toImage(fit, e.clientX - r.left, e.clientY - r.top);
-  return {
-    x: Math.min(img!.naturalWidth, Math.max(0, p.x + ox)),
-    y: Math.min(img!.naturalHeight, Math.max(0, p.y + oy)),
-    // Tap uncertainty in photo pixels, fixed at the zoom the point was placed at.
-    s: TAP_SIGMA_SCREEN_PX / fit.scale,
-  };
+  return { id: e.pointerId, x: e.clientX - r.left, y: e.clientY - r.top, type: e.pointerType };
 }
 
-function showLoupe(e: PointerEvent, p: Pt): void {
-  const r = canvas.getBoundingClientRect();
+function showLoupe(at: Tap): void {
+  const held = pointer.held();
+  loupe.hidden = !held;
+  if (!held || !photo) return;
   // Keep the loupe out from under the finger.
-  loupe.classList.toggle("right", e.clientX - r.left < 170 && e.clientY - r.top < 170);
-  loupe.hidden = false;
+  loupe.classList.toggle("right", at.x < 170 && at.y < 170);
   const ctx = loupe.getContext("2d");
-  if (ctx && img) drawLoupe(ctx, img, p, fit, loupe.width);
+  if (ctx) drawLoupe(ctx, photo.source, held, fit, loupe.width);
 }
 
 canvas.addEventListener("pointerdown", (e) => {
-  if (!img || held) return;
-  const at = photoPoint(e);
-  let index = nearest(points, at, GRAB_RADIUS_PX / fit.scale);
-  let ox = 0;
-  let oy = 0;
-  if (index >= 0) {
-    // Picking up an existing point: remember the offset so it does not jump.
-    ox = points[index].x - at.x;
-    oy = points[index].y - at.y;
-  } else {
-    if (points.length >= MAX_POINTS) return;
-    points.push(at);
-    index = points.length - 1;
-  }
-  held = { index, id: e.pointerId, ox, oy };
+  if (pointer.down(tap(e)) === "none") return;
   try {
     // Keep receiving moves if the finger slides off the photo.
     canvas.setPointerCapture(e.pointerId);
   } catch {
     // Some browsers refuse capture for some pointers. Placing still works.
   }
-  showLoupe(e, points[index]);
+  showLoupe(tap(e));
   render();
 });
-
 canvas.addEventListener("pointermove", (e) => {
-  if (!held || e.pointerId !== held.id) return;
-  points[held.index] = photoPoint(e, held.ox, held.oy);
-  showLoupe(e, points[held.index]);
+  if (pointer.move(tap(e)) === "none") return;
+  showLoupe(tap(e));
   render();
 });
+for (const [name, end] of [["pointerup", pointer.up], ["pointercancel", pointer.cancel]] as const)
+  canvas.addEventListener(name, (e) => {
+    if (end(tap(e)) === "none") return;
+    showLoupe(tap(e));
+    render();
+  });
 
-function release(e: PointerEvent): void {
-  if (!held || e.pointerId !== held.id) return;
-  held = null;
-  loupe.hidden = true;
-}
-canvas.addEventListener("pointerup", release);
-canvas.addEventListener("pointercancel", release);
-
-undo.addEventListener("click", () => {
-  points.pop();
+undoButton.addEventListener("click", () => {
+  undo(state);
   render();
 });
-reset.addEventListener("click", () => {
-  points = [];
+resetButton.addEventListener("click", () => {
+  reset(state);
   swap.checked = false;
   render();
 });
@@ -181,8 +119,8 @@ function load(input: HTMLInputElement): void {
   const next = new Image();
   next.onload = () => {
     URL.revokeObjectURL(url);
-    img = next;
-    points = [];
+    photo = { source: next, w: next.naturalWidth, h: next.naturalHeight };
+    reset(state);
     empty.hidden = true;
     layout();
   };
