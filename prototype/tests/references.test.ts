@@ -105,7 +105,7 @@ describe("what the page does not catch, and says so", () => {
     expect(solved?.ok).toBe(true);
     expect(words.problem).toBe("");
     const wall = shown(bars!.wall5);
-    expect(Math.abs(wall.value - 2500)).toBeGreaterThan(wall.error); // reads about 245 ± 4 cm for a true 250
+    expect(Math.abs(wall.value - 2500)).toBeGreaterThan(wall.error); // worked out as about 245.0 ± 4.4 cm for a true 250
   });
 
   it("believes a length typed 10% too long: no refusal, and the truth is outside the bar", () => {
