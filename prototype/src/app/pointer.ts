@@ -5,7 +5,7 @@ import type { Pt } from "../measure/homography";
 import { TAP_SIGMA_SCREEN_PX } from "../measure/monte-carlo";
 import { toImage, type Fit } from "../ui/view";
 import { pressOn, TAP_TRAVEL } from "./press";
-import { handles, moveHandle, place, type Handle, type State } from "./state";
+import { closeRoom, handles, moveHandle, place, type Handle, type State } from "./state";
 
 /** One pointer event: which pointer, where on the canvas (CSS px), what kind. */
 export type Tap = { id: number; x: number; y: number; type: string };
@@ -76,7 +76,11 @@ export function createPointer(host: Host) {
 
   function up(e: Tap): Change {
     if (!drag || e.id !== drag.id) return "none";
+    const { handle, grabbed, moving } = drag;
     drag = null;
+    // A tap on the first corner of an open outline closes it.
+    if (grabbed && !moving && handle.group === "room" && handle.index === 0 && host.state.tool === "room")
+      closeRoom(host.state);
     return "points";
   }
 

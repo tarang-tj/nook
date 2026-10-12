@@ -20,17 +20,3 @@ export const toScreen = (fit: Fit, p: Pt): Pt => ({
   x: p.x * fit.scale + fit.dx,
   y: p.y * fit.scale + fit.dy,
 });
-
-/** Index of the point within `radius` photo pixels of `p`, or -1. */
-export function nearest(points: Pt[], p: Pt, radius: number): number {
-  let best = -1;
-  let bestD = radius;
-  points.forEach((q, i) => {
-    const d = Math.hypot(q.x - p.x, q.y - p.y);
-    if (d <= bestD) {
-      best = i;
-      bestD = d;
-    }
-  });
-  return best;
-}

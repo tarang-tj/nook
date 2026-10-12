@@ -3,7 +3,7 @@ import { formatMeasured } from "../src/measure/format";
 import { measured } from "../src/measure/noise";
 import { REFERENCES } from "../src/measure/references";
 import { fromMm, isUnit, toMm } from "../src/measure/units";
-import { fitContain, nearest, toImage, toScreen } from "../src/ui/view";
+import { fitContain, toImage, toScreen } from "../src/ui/view";
 
 describe("units", () => {
   it("converts millimetres to cm and inches and back", () => {
@@ -47,11 +47,5 @@ describe("screen and photo coordinates", () => {
     const screen = toScreen(fit, { x: 1500, y: 2000 });
     expect(screen).toEqual({ x: 400, y: 200 });
     expect(toImage(fit, screen.x, screen.y)).toEqual({ x: 1500, y: 2000 });
-  });
-
-  it("picks up the closest point within reach, or none", () => {
-    const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
-    expect(nearest(points, { x: 90, y: 5 }, 30)).toBe(1);
-    expect(nearest(points, { x: 50, y: 50 }, 30)).toBe(-1);
   });
 });
