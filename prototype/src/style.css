@@ -10,7 +10,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-html, body { height: 100%; margin: 0; }
+html, body { height: 100%; margin: 0; overflow: hidden; } /* only the panel scrolls */
 body {
   display: grid;
   /* The photo's box has a height of its own, so it does not shrink when the
@@ -39,7 +39,7 @@ button, .button, select, input[type="number"] {
   color: var(--text);
   font: inherit;
 }
-.button { display: inline-flex; align-items: center; cursor: pointer; }
+.button { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
 .button:focus-within, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -95,7 +95,15 @@ details[open] > summary::before { content: "\2212"; }
 .no-photo #zoom, .no-photo #actions, .no-photo #zoom-text { display: none; }
 #result { display: block; font-size: 22px; font-weight: 650; }
 #result.problem { font-size: 15px; font-weight: 500; }
-#truth { font-weight: 600; }
+ul { margin: 4px 0; padding: 0; list-style: none; }
+li { margin: 3px 0; }
+#rows b, #verdicts li { font-weight: 600; }
+#truth { font-weight: 600; color: #a8e6b0; }
+.tabs { display: flex; gap: 4px; margin: 6px 0; }
+.tabs button { flex: 1; padding: 0 6px; }
+.tabs button[aria-selected="true"] { border-color: var(--accent); color: var(--accent); font-weight: 650; }
+input[type="number"] { width: 84px; padding: 0 8px; }
+#plan svg { display: block; width: 100%; height: auto; border-radius: 8px; }
 #sample-box { border-left: 3px solid var(--accent); padding-left: 10px; margin: 6px 0; }
 
 /* A wide or a sideways screen: photo on the left, panel on the right. */

@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { report } from "../src/app/report";
 import { placeSampleTaps } from "../src/app/sample-taps";
 import { newState } from "../src/app/state";
 import { dist } from "../src/measure/homography";
 import { projectFloor, SAMPLE_FLOOR, SAMPLE_SIZE, SAMPLE_TRUTH, sampleTaps } from "../src/sample/floor";
+import { tell } from "./page";
 import { project } from "./scene";
-
-const SETTINGS = { paper: "letter", swap: false, unit: "cm" as const };
 
 describe("the made-up sample floor", () => {
   it("uses the same camera as the test scene, and every marked spot is inside the picture", () => {
@@ -38,12 +36,12 @@ describe("the made-up sample floor", () => {
     expect(placeSampleTaps(s)).toBe(6);
     expect(s.points.sheet).toHaveLength(4);
     expect(s.points.ends.map((p) => p.s)).toEqual([1.5, 1.5]);
-    const words = report(s, { hasPhoto: true, notice: "", sample: true }, SETTINGS);
-    expect(words.result).toBe("A to B: 100 ± 2 cm");
-    expect(words.truth).toBe("True value on this made-up floor: A to B is 100 cm.");
-    expect(report(s, { hasPhoto: true, notice: "", sample: true }, { ...SETTINGS, unit: "in" }).truth).toContain("39.4 in");
+    const { words } = tell(s, { sample: true });
+    expect(words.headline).toBe("A to B: 100 ± 3 cm");
+    expect(words.truth).toEqual(["True value on this made-up floor: A to B is 100 cm."]);
+    expect(tell(s, { sample: true }, { unit: "in" }).words.truth[0]).toContain("39.4 in");
     // A real photo has no known truth, and nothing is printed for one.
-    expect(report(s, { hasPhoto: true, notice: "", sample: false }, SETTINGS).truth).toBe("");
+    expect(tell(s, { sample: false }).words.truth).toEqual([]);
     expect(placeSampleTaps(s)).toBe(0);
   });
 

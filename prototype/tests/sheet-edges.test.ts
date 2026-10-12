@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { report, UNCHECKED } from "../src/app/report";
+import { UNCHECKED } from "../src/app/report";
 import { sheetEdges, sheetWords, sideText } from "../src/app/sheet-edges";
 import { newState } from "../src/app/state";
 import { BASIS } from "../src/measure/monte-carlo";
 import { referenceById } from "../src/measure/references";
-import { fakePage } from "./page";
+import { fakePage, tell } from "./page";
 import { letterInPhoto, project } from "./scene";
 
 const LETTER = referenceById("letter");
@@ -44,14 +44,12 @@ describe("the length assumed for each edge of the sheet", () => {
 });
 
 describe("words that must stay on screen", () => {
-  const SETTINGS = { paper: "letter", swap: false, unit: "cm" as const };
-
   it("a file that could not be opened stays reported until a photo loads, whatever redraws", () => {
     const s = newState();
     const notice = "That file could not be opened as a photo. Try another one.";
-    for (let redraw = 0; redraw < 3; redraw++) expect(report(s, { hasPhoto: false, notice }, SETTINGS).notice).toBe(notice);
-    expect(report(s, { hasPhoto: false, notice }, SETTINGS).step).toMatch(/Step 1 of 3/);
-    expect(report(s, { hasPhoto: true, notice: "" }, SETTINGS).notice).toBe("");
+    for (let redraw = 0; redraw < 3; redraw++) expect(tell(s, { hasPhoto: false, notice }).words.notice).toBe(notice);
+    expect(tell(s, { hasPhoto: false, notice }).words.step).toMatch(/Step 1/);
+    expect(tell(s).words.notice).toBe("");
   });
 
   it("the tape-measure sentence is beside every result, and in the short line that never folds away", () => {
@@ -59,8 +57,8 @@ describe("words that must stay on screen", () => {
     expect(BASIS).toMatch(/has not yet been checked against a tape measure/);
     const page = fakePage({ w: 3000, h: 4000 });
     for (const p of [...letterInPhoto(), project({ x: -300, y: 400 }), project({ x: 700, y: 400 })]) page.tapPhoto(p, "mouse");
-    const words = report(page.state, { hasPhoto: true, notice: "" }, SETTINGS);
-    expect(words.result).toBe("A to B: 100 ± 2 cm");
+    const { words } = tell(page.state);
+    expect(words.headline).toBe("A to B: 100 ± 3 cm");
     expect(words.basis).toContain("has not yet been checked against a tape measure");
     expect(words.sheet).toMatch(/^Sheet taken as US Letter/);
   });

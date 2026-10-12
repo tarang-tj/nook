@@ -2,11 +2,28 @@
 // shown in a box, with taps replayed through the same pointer rules the
 // real page uses. No browser.
 import { createPointer, type Host } from "../src/app/pointer";
+import { barsOf, sceneOf, solve, type Settings } from "../src/app/numbers";
+import { report, type Page } from "../src/app/report";
 import { newState, type State, type Tool } from "../src/app/state";
 import type { Pt } from "../src/measure/homography";
 import { fitContain, toScreen, type Fit } from "../src/ui/view";
 
 export const PHOTO = { w: 3000, h: 4000 };
+
+export const SETTINGS: Settings = {
+  paper: "letter", swap: false, unit: "cm", paper2: "a4", swap2: false, spanLength: NaN, thingWidth: 80, thingDepth: 60,
+};
+
+/** Everything the page would say for these taps, with the error bars worked
+ * out on the spot (the real page works them out a moment later). */
+export function tell(state: State, page: Partial<Page> = {}, settings: Partial<Settings> = {}) {
+  const set = { ...SETTINGS, ...settings };
+  const at = { hasPhoto: true, notice: "", ...page };
+  const scene = at.hasPhoto ? sceneOf(state, set) : null;
+  const solved = scene ? solve(scene) : null;
+  const bars = scene && solved?.ok ? barsOf(scene, solved) : null;
+  return { scene, solved, bars, words: report(state, at, set, solved, bars) };
+}
 /** The audit's phone: 390 wide, about 511 px of stage for the photo. */
 export const PHONE_BOX = { w: 390, h: 511 };
 

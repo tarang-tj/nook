@@ -21,9 +21,9 @@
       ></canvas>
       <canvas id="loupe" width="132" height="132" hidden aria-hidden="true"></canvas>
       <p id="empty">
-        Lay one sheet of paper flat on the floor. Take a photo with the whole sheet and the two
-        spots you want to measure between in view. Then tap the four corners of the sheet and the
-        two spots. No paper to hand? Press "Try the sample" below.
+        Lay one sheet of paper flat on the floor. Take a photo with the whole sheet and what you
+        want to measure in view. Then tap the four corners of the sheet and the spots to measure.
+        No paper to hand? Press "Try the sample" below.
       </p>
     </main>
 
@@ -36,19 +36,63 @@
       </div>
       <p id="zoom-text" class="small"></p>
 
-      <p id="notice" class="problem" role="alert" hidden></p>
-      <p id="step" aria-live="polite"></p>
-      <output id="result" aria-live="polite"></output>
-      <p id="truth" hidden></p>
-      <p id="unchecked" class="small" hidden></p>
-      <details id="basis-box" hidden>
-        <summary>What the ± covers and leaves out</summary>
-        <p id="basis" class="small"></p>
-      </details>
+      <div class="tabs" role="tablist" aria-label="What to measure">
+        <button id="tab-distance" role="tab" type="button" data-tool="distance" aria-selected="true" aria-controls="tool">Distance</button>
+        <button id="tab-room" role="tab" type="button" data-tool="room" aria-selected="false" aria-controls="tool" tabindex="-1">Room</button>
+        <button id="tab-fit" role="tab" type="button" data-tool="fit" aria-selected="false" aria-controls="tool" tabindex="-1">Fit</button>
+      </div>
+
+      <div id="tool" role="tabpanel" aria-labelledby="tab-distance">
+        <p id="notice" class="problem" role="alert" hidden></p>
+        <p id="step" aria-live="polite"></p>
+
+        <div id="fit-box" hidden>
+          <p class="small">
+            One example of what a measured outline allows. Floor only: it says nothing about
+            height, doors or stairs.
+          </p>
+          <div class="row">
+            <label>Width <input id="thing-width" type="number" inputmode="decimal" min="0" step="any" value="80" /></label>
+            <label>Depth <input id="thing-depth" type="number" inputmode="decimal" min="0" step="any" value="60" /></label>
+            <span id="thing-unit" class="small"></span>
+          </div>
+        </div>
+
+        <div id="results" aria-live="polite">
+          <p id="working" class="small" hidden>Working out the numbers and their error bars.</p>
+          <output id="result"></output>
+          <p id="problem" class="problem" hidden></p>
+          <ul id="rows" hidden></ul>
+          <ul id="verdicts" hidden></ul>
+          <ul id="notes" class="small problem" hidden></ul>
+          <ul id="truth" hidden></ul>
+        </div>
+        <div class="row" id="turn-row" hidden>
+          <button id="turn-left" type="button">Turn left</button>
+          <button id="turn-right" type="button">Turn right</button>
+          <span id="turn-text" class="small"></span>
+        </div>
+        <p id="unchecked" class="small" hidden></p>
+        <details id="basis-box" hidden>
+          <summary>What the ± covers and leaves out</summary>
+          <p id="basis" class="small"></p>
+        </details>
+
+        <div id="plan-box" hidden>
+          <h2>Plan from above</h2>
+          <div id="plan"></div>
+          <div class="row">
+            <button id="save-svg" type="button">Save plan (SVG)</button>
+            <button id="save-csv" type="button">Save walls (CSV)</button>
+          </div>
+          <p class="small">Both files are made in this browser. Nothing is uploaded.</p>
+        </div>
+      </div>
 
       <div class="row" id="actions">
         <button id="undo" type="button" disabled>Undo</button>
         <button id="reset" type="button" disabled>Start over</button>
+        <button id="close" type="button" hidden>Close outline</button>
       </div>
 
       <div class="row">

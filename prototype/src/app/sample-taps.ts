@@ -6,6 +6,13 @@ import { closeRoom, place, target, type State } from "./state";
 /** Place every tap the current tool still needs. Returns how many it placed. */
 export function placeSampleTaps(s: State): number {
   let placed = 0;
+  for (;;) {
+    const group = target(s);
+    const tap = group ? sampleTaps(group)[s.points[group].length] : undefined;
+    if (!tap) break;
+    place(s, tap);
+    placed++;
+  }
   // The fit tool tries a thing inside the outline, so it needs the outline too.
   if (s.tool === "fit" && s.points.sheet.length === 4 && !s.closed && s.points.room.length === 0) {
     for (const tap of sampleTaps("room")) {
@@ -14,13 +21,6 @@ export function placeSampleTaps(s: State): number {
       placed++;
     }
     closeRoom(s);
-  }
-  for (;;) {
-    const group = target(s);
-    const tap = group ? sampleTaps(group)[s.points[group].length] : undefined;
-    if (!tap) break;
-    place(s, tap);
-    placed++;
   }
   if (s.tool === "room" && s.points.room.length === sampleTaps("room").length) closeRoom(s);
   return placed;
