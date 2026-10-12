@@ -161,7 +161,7 @@ el("save-svg").addEventListener("click", () => {
   if (shown?.plan?.ok) download("nook-draft-plan.svg", shown.plan.svg, "image/svg+xml");
 });
 el("save-csv").addEventListener("click", () => {
-  if (shown?.words.rows.length) download("nook-draft-walls.csv", csvOf(shown.words.rows), "text/csv");
+  if (shown?.words.rows.length) download("nook-draft-walls.csv", csvOf(shown.words.rows, sample), "text/csv");
 });
 
 /** Show a new picture, whole, with no taps on it. */

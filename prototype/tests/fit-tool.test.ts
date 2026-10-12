@@ -91,11 +91,18 @@ describe("saving the plan and the walls", () => {
 
   it("writes one CSV row per wall, then the perimeter and the area, and empty cells for a refused number", () => {
     const { words } = tell(room());
-    const lines = csvOf(words.rows).trim().split("\n");
-    expect(lines[0]).toBe("wall,length,error,unit");
+    const lines = csvOf(words.rows, true).trim().split("\n");
+    expect(lines[0]).toBe("wall,length,error,unit,status");
     expect(lines).toHaveLength(9);
-    expect(lines[1]).toMatch(/^Wall 1 \(corner 1 to 2\),1\d\d(\.\d+)?,\d+(\.\d+)?,cm$/);
-    expect(lines[8]).toMatch(/^Floor area,3\.\d+,0\.\d+,m²$/);
-    expect(csvOf([{ name: "Wall 1", measured: null, text: "no number." }])).toBe("wall,length,error,unit\nWall 1,,,\n");
+    // Every row says what it is, and carries the figures the page shows, no more.
+    const status = '"Draft from a prototype, of a made-up floor, not a real room. Not checked against a tape measure or a real photo."';
+    for (const [i, row] of words.rows.entries()) {
+      const [value, error, unit] = row.text.replace(" ± ", " ").split(" ");
+      expect(lines[i + 1]).toBe(`${row.name},${value},${error},${unit},${status}`);
+    }
+    expect(lines[1]).toMatch(/^Wall 1 \(corner 1 to 2\),15\d,\d,cm,/);
+    expect(lines[8]).toMatch(/^Floor area,3\.\d+,0\.\d+,m²,/);
+    const photo = "Draft from a prototype. Not checked against a tape measure or a real photo."; // no comma, so no quotes
+    expect(csvOf([{ name: "Wall 1", measured: null, text: "no number." }], false)).toBe(`wall,length,error,unit,status\nWall 1,,,,${photo}\n`);
   });
 });

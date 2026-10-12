@@ -4,7 +4,7 @@
 import { planCsv, planSvg, type Plan } from "../measure/plan";
 import type { Settings, Solved } from "./numbers";
 import type { Row } from "./report";
-import { UNCHECKED } from "./report";
+import { NOT_CHECKED, UNCHECKED } from "./report";
 
 /** The plan as drawn on the page and saved. `rows` are the room tool's rows
  * (walls first), or empty while the bars are being worked out.
@@ -35,5 +35,11 @@ export function planOf(solved: Solved | null, rows: Row[], set: Settings, sample
 }
 
 /** The walls, the perimeter and the floor area as CSV. A row with no honest
- * number is written with empty cells. */
-export const csvOf = (rows: Row[]): string => planCsv(rows.map((row) => ({ wall: row.name, measured: row.measured })));
+ * number is written with empty cells. Every row says it is a draft, whether
+ * the floor was made up, and that nothing was checked: a table is the file
+ * most easily pasted somewhere without the page around it. */
+export const csvOf = (rows: Row[], sample: boolean): string =>
+  planCsv(
+    rows.map((row) => ({ wall: row.name, measured: row.measured })),
+    `Draft from a prototype${sample ? ", of a made-up floor, not a real room" : ""}. ${NOT_CHECKED}`,
+  );

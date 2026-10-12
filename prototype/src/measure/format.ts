@@ -24,13 +24,20 @@ function fixed(value: number, decimals: number): string {
   return /^-0(\.0+)?$/.test(text) ? text.slice(1) : text;
 }
 
-/** "123.4 ± 0.6 cm": the error to one significant figure, the value to the
- * same decimal place. Anything that is not a real measurement is written
+/** The value and its error as they are written everywhere: the error to one
+ * significant figure, the value to the same decimal place. Null for anything
+ * that is not a real measurement. */
+export function roundedParts(m: Measured): { value: string; error: string } | null {
+  if (!isMeasured(m)) return null;
+  if (m.error === 0) return { value: String(Number(m.value.toPrecision(3))), error: "0" };
+  const { error, decimals } = roundError(m.error);
+  return { value: fixed(m.value, decimals), error: fixed(error, decimals) };
+}
+
+/** "123.4 ± 0.6 cm". Anything that is not a real measurement is written
  * "not measured", never as a bare number. */
 export function formatMeasured(m: Measured): string {
-  if (!isMeasured(m)) return "not measured";
-  const unit = m.unit ? ` ${m.unit}` : "";
-  if (m.error === 0) return `${Number(m.value.toPrecision(3))} ± 0${unit}`;
-  const { error, decimals } = roundError(m.error);
-  return `${fixed(m.value, decimals)} ± ${fixed(error, decimals)}${unit}`;
+  const parts = roundedParts(m);
+  if (!parts) return "not measured";
+  return `${parts.value} ± ${parts.error}${m.unit ? ` ${m.unit}` : ""}`;
 }

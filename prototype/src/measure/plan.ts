@@ -8,7 +8,8 @@
 // The plane map puts y growing towards the camera, so the camera ends up at
 // the bottom of the plan, the same way up as the photo.
 import type { Pt } from "./homography";
-import { isMeasured, type Measured } from "./noise";
+import { roundedParts } from "./format";
+import type { Measured } from "./noise";
 import { fromMm, toMm, type Unit } from "./units";
 
 export type PlanOptions = {
@@ -160,15 +161,19 @@ function csvCell(value: string): string {
   const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
-const csvNumber = (v: number): string => String(Number(v.toPrecision(6)));
 
 /** The table as CSV text: wall, length, error (the half-width of the bar),
- * unit. The page adds its perimeter and area as rows of their own. */
-export function planCsv(rows: PlanRow[]): string {
-  const lines = rows.map(({ wall, measured: m }) =>
-    m && isMeasured(m)
-      ? [csvCell(wall), csvNumber(m.value), csvNumber(m.error), csvCell(m.unit)].join(",")
-      : [csvCell(wall), "", "", csvCell(m?.unit ?? "")].join(","),
-  );
-  return [CSV_HEADER, ...lines].join("\n") + "\n";
+ * unit. The page adds its perimeter and area as rows of their own. Numbers
+ * are written with the figures the page shows ("152 ± 7 cm" is 152 and 7),
+ * because more figures than the bar supports read as more certainty than
+ * there is. A `status` is repeated on every row, so a row pasted somewhere
+ * else still says what it is. */
+export function planCsv(rows: PlanRow[], status = ""): string {
+  const tail = status ? [csvCell(status)] : [];
+  const lines = rows.map(({ wall, measured: m }) => {
+    const parts = m ? roundedParts(m) : null;
+    const cells = parts ? [parts.value, parts.error, csvCell(m?.unit ?? "")] : ["", "", csvCell(m?.unit ?? "")];
+    return [csvCell(wall), ...cells, ...tail].join(",");
+  });
+  return [status ? `${CSV_HEADER},status` : CSV_HEADER, ...lines].join("\n") + "\n";
 }
