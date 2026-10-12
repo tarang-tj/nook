@@ -53,7 +53,7 @@ The prototype grew four ways in one go so the team could see them side by side: 
 | The page keeps nothing after a reload. Should it? Keeping a photo of someone's room raises privacy questions the team has not discussed. | The team |
 | How should teammates open the sample? Today it runs only from a laptop on the same network. Hosting it anywhere would make the team's project public or need accounts, and that is a team decision. | The team |
 | More of the measuring code now comes from SPECTRA, which is TJ's and has no open licence. Does that change the licence question above? | The team, with TJ |
-| The new parts were written with AI assistance, like the first version. The course has no policy on AI-written code (TJ, 2026-10-12). Does the team want them in graded work? | The team |
+| The new parts were written with AI assistance, like the first version. TJ said on 2026-10-12 that the course has no policy on AI-written code. Does the team want them in graded work? | The team |
 | The accuracy counts in the brief come from made-up scenes. Who will do the first check against a tape measure, and what result would make the method not worth pursuing? | The team |
 
 ## About customers

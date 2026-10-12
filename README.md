@@ -98,6 +98,7 @@ The team's contract, pitch and canvas are the team's own documents and are not w
 The short list. Details in [docs/open-questions.md](docs/open-questions.md).
 
 - Who on the team has an iPhone or iPad with LiDAR?
+- What is the course policy on AI-written text in graded documents?
 - What was decided on the 2026-10-08 call? It is not recorded here.
 
 ## How to contribute

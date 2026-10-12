@@ -18,6 +18,11 @@ const papers = (page: Awaited<ReturnType<typeof startPage>>) => ({
 });
 
 describe("the page, wired", () => {
+  it("starts with no note under Paper", async () => {
+    const page = await startPage();
+    expect(page.el("paper-note").hidden).toBe(true);
+  });
+
   it("starts as index.html has it", async () => {
     const page = await startPage();
     expect(papers(page)).toEqual({ paper: "letter", swap: false, paper2: "letter", swap2: false, span: "" });
@@ -93,8 +98,12 @@ describe("the page, wired", () => {
     const page = await startPage();
     page.press("sample");
     page.set("paper", "a4"); // picked by hand, with the made-up floor showing
+    page.press("reset"); // Start over puts the floor's own paper back on screen
     page.loadPhoto();
     expect(page.el("paper").value).toBe("a4");
+    // The note must be true here too: this A4 was picked during the sample.
+    expect(page.el("paper-note").textContent).toContain("the size you picked last");
+    expect(page.el("paper-note").textContent).not.toContain("before");
     page.press("sample");
     page.press("tab-room");
     page.press("sample-taps"); // the page sets the floor's own paper: not a pick

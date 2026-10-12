@@ -39,7 +39,7 @@ export function startPicture(set: Settings, sample: boolean, aside: Aside): { se
 /** The line under Paper when a photo follows the made-up floor and the paper
  * went back to the person's own: the page changed it, so the page says so. */
 export const putBackNote = (paper: string): string =>
-  `Paper is back to ${referenceById(paper).label}, the size chosen before the sample floor. Change it if the sheet in this photo is a different size.`;
+  `Paper is back to ${referenceById(paper).label}, the size you picked last. Change it if the sheet in this photo is a different size.`;
 
 /** The person picks the first paper by hand. While the made-up floor is up
  * that pick is theirs, so it replaces the one set aside: the next photo is
