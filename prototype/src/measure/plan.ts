@@ -164,7 +164,7 @@ function csvCell(value: string): string {
 
 /** The table as CSV text: wall, length, error (the half-width of the bar),
  * unit. The page adds its perimeter and area as rows of their own. Numbers
- * are written with the figures the page shows ("152 ± 7 cm" is 152 and 7),
+ * are written with the figures the page shows ("152 ± 8 cm" is 152 and 8),
  * because more figures than the bar supports read as more certainty than
  * there is. A `status` is repeated on every row, so a row pasted somewhere
  * else still says what it is. */

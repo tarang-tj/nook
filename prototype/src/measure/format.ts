@@ -1,17 +1,27 @@
 // Adapted from SPECTRA (c) 2026 Tarang Jammalamadaka, used here by its author.
 import { isMeasured, type Measured } from "./noise";
 
-/** An error rounded to one significant figure, and the number of decimal
- * places that leaves (negative when it rounds to tens or hundreds). */
-export function roundError(error: number): { error: number; decimals: number } {
+/** The error is written as this many steps of its last decimal place at
+ * most: one figure from 2 to 9, two figures from 10 to 19. One figure alone
+ * is too coarse when it is a 1 (14.9 would be written 10 or 20). */
+const MOST_STEPS = 19;
+
+/** A value and its error rounded for writing, and the decimal places used
+ * (negative when they round to tens or hundreds). The value goes to the
+ * nearest step. The error is rounded up, after adding how far the value
+ * moved, so the written range always holds the whole worked-out range: a bar
+ * on screen is never narrower than the bar that was worked out. */
+export function roundOutward(value: number, error: number): { value: number; error: number; decimals: number } {
   let exponent = Math.floor(Math.log10(error));
-  let lead = Math.round(error / 10 ** exponent);
-  // 0.96 rounds to 1.0, which is one place coarser than 0.9 was.
-  if (lead === 10) {
-    lead = 1;
+  if (error / 10 ** exponent < 2) exponent--; // first figure 1: keep a second
+  for (;;) {
+    const step = 10 ** exponent;
+    const shown = Math.round(value / step) * step;
+    // The 1e-9 keeps an error that is already a whole number of steps as it is.
+    const steps = Math.ceil((error + Math.abs(value - shown)) / step - 1e-9);
+    if (steps <= MOST_STEPS) return { value: shown, error: steps * step, decimals: 0 - exponent };
     exponent++;
   }
-  return { error: lead * 10 ** exponent, decimals: 0 - exponent };
 }
 
 /** `value` to `decimals` places as text. Negative places round to tens, hundreds. */
@@ -24,14 +34,13 @@ function fixed(value: number, decimals: number): string {
   return /^-0(\.0+)?$/.test(text) ? text.slice(1) : text;
 }
 
-/** The value and its error as they are written everywhere: the error to one
- * significant figure, the value to the same decimal place. Null for anything
- * that is not a real measurement. */
+/** The value and its error as they are written everywhere, on the page and
+ * in the saved files. Null for anything that is not a real measurement. */
 export function roundedParts(m: Measured): { value: string; error: string } | null {
   if (!isMeasured(m)) return null;
   if (m.error === 0) return { value: String(Number(m.value.toPrecision(3))), error: "0" };
-  const { error, decimals } = roundError(m.error);
-  return { value: fixed(m.value, decimals), error: fixed(error, decimals) };
+  const { value, error, decimals } = roundOutward(m.value, m.error);
+  return { value: fixed(value, decimals), error: fixed(error, decimals) };
 }
 
 /** "123.4 ± 0.6 cm". Anything that is not a real measurement is written

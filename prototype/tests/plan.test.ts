@@ -119,11 +119,12 @@ describe("planCsv", () => {
       { wall: "Wall 1", measured: measured(150.04321, 4.6, "cm", "basis") },
       { wall: "Area", measured: measured(37500, 6800, "cm²", "basis") },
     ]);
-    // The same figures the page shows ("150 ± 5 cm"), not six of them.
-    expect(csv).toBe(`${CSV_HEADER}\nWall 1,150,5,cm\nArea,38000,7000,cm²\n`);
+    // The same figures the page shows ("150 ± 5 cm"), not six of them, and
+    // the bar rounded up as the page rounds it (6800 and the 500 the value moved: 8000).
+    expect(csv).toBe(`${CSV_HEADER}\nWall 1,150,5,cm\nArea,38000,8000,cm²\n`);
     expect(CSV_HEADER).toBe("wall,length,error,unit");
-    expect(planCsv([{ wall: "Wall 1", measured: measured(151.614, 7.41672, "cm", "b") }])).toBe(`${CSV_HEADER}\nWall 1,152,7,cm\n`);
-    expect(planCsv([{ wall: "Area", measured: measured(3.1512, 0.0436, "m²", "b") }])).toBe(`${CSV_HEADER}\nArea,3.15,0.04,m²\n`);
+    expect(planCsv([{ wall: "Wall 1", measured: measured(151.614, 7.41672, "cm", "b") }])).toBe(`${CSV_HEADER}\nWall 1,152,8,cm\n`);
+    expect(planCsv([{ wall: "Area", measured: measured(3.1512, 0.0436, "m²", "b") }])).toBe(`${CSV_HEADER}\nArea,3.15,0.05,m²\n`);
   });
 
   it("marks every row with its status when one is given, so a pasted row keeps it", () => {
@@ -145,7 +146,7 @@ describe("planCsv", () => {
       { wall: 'North wall, by the "door"', measured: measured(10, 1, "in", "b") },
       { wall: "=HYPERLINK(1)", measured: null },
     ]);
-    expect(csv.split("\n")[1]).toBe('"North wall, by the ""door""",10,1,in');
+    expect(csv.split("\n")[1]).toBe('"North wall, by the ""door""",10.0,1.0,in');
     expect(csv.split("\n")[2]).toBe("'=HYPERLINK(1),,,");
   });
 });
