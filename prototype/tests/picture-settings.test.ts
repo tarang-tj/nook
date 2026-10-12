@@ -2,7 +2,7 @@
 // long the known length is) must not carry over to the next picture, and the
 // made-up floor sets its own.
 import { describe, expect, it } from "vitest";
-import { forNewPicture, startPicture, withoutExtra } from "../src/app/picture-settings";
+import { forNewPicture, paperPicked, startPicture, withoutExtra } from "../src/app/picture-settings";
 import { placeSampleTaps } from "../src/app/sample-taps";
 import { newState, type State, type Tool } from "../src/app/state";
 import { SAMPLE_TRUTH } from "../src/sample/floor";
@@ -60,6 +60,17 @@ describe("the first paper, across the made-up floor and back", () => {
     expect(at.set.paper).toBe("letter");
     expect(startPicture(at.set, false, at.aside).set.paper).toBe("a4");
     expect(startPicture({ ...SETTINGS, paper: "letter" }, false, startPicture(SETTINGS, true, null).aside).set.paper).toBe("letter");
+  });
+
+  it("a paper picked by hand on the made-up floor is the one the next photo gets", () => {
+    const onSample = startPicture({ ...SETTINGS, paper: "letter" }, true, null);
+    const picked = paperPicked(onSample.aside, "a4");
+    expect(startPicture({ ...onSample.set, paper: "a4" }, false, picked).set.paper).toBe("a4");
+    // Start over on the made-up floor shows the floor's paper again and keeps the pick.
+    const again = startPicture({ ...onSample.set, paper: "a4" }, true, picked);
+    expect(again.set.paper).toBe("letter");
+    expect(startPicture(again.set, false, again.aside).set.paper).toBe("a4");
+    expect(paperPicked(null, "a4")).toBeNull(); // on a photo nothing is set aside
   });
 
   it("from photo to photo the paper is the one showing, and the rest starts clean", () => {

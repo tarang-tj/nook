@@ -3,7 +3,7 @@
 import { csvOf, planOf } from "./app/exports";
 import { createLater } from "./app/later";
 import { barsOf, sceneOf, solve, type Bars } from "./app/numbers";
-import { forNewPicture, startPicture, withoutExtra, type Aside } from "./app/picture-settings";
+import { forNewPicture, paperPicked, startPicture, withoutExtra, type Aside } from "./app/picture-settings";
 import { createPointer } from "./app/pointer";
 import { report, type Report } from "./app/report";
 import { placeSampleTaps, SAMPLE_EXTRAS } from "./app/sample-taps";
@@ -134,6 +134,8 @@ const freshSettings = () => {
   aside = next.aside;
   writePictureSettings(next.set);
 };
+const paperBox = el<HTMLSelectElement>("paper");
+paperBox.addEventListener("change", () => { aside = paperPicked(aside, paperBox.value); });
 act("reset", () => {
   reset(state);
   freshSettings();

@@ -34,6 +34,13 @@ export function startPicture(set: Settings, sample: boolean, aside: Aside): { se
   return { set: forNewPicture({ ...set, paper: own }, sample), aside: sample ? { paper: own } : null };
 }
 
+/** The person picks the first paper by hand. While the made-up floor is up
+ * that pick is theirs, so it replaces the one set aside: the next photo is
+ * measured with the paper they chose last, not the one from before. */
+export function paperPicked(aside: Aside, paper: string): Aside {
+  return aside ? { paper } : null;
+}
+
 /** The settings after an extra reference is removed: what was set for it goes too. */
 export function withoutExtra(set: Settings, extra: "second" | "span", sample = false): Settings {
   const fresh = forNewPicture(set, sample);
