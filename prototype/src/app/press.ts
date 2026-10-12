@@ -3,15 +3,18 @@
 // What a press on the photo means: pick up a point that is already there, or
 // place a new one. Pure, so the rule can be tested without a browser.
 //
-// The rule has four parts. (1) While a sheet's four corners are still being
+// The rule has five parts. (1) While a sheet's four corners are still being
 // placed, a press always places: the corners of a small sheet are too close
-// together to tell "adjust corner 1" from "place corner 3". (2) A finger
-// reaches further than a mouse. (3) A point's reach shrinks when another
+// together to tell "adjust corner 1" from "place corner 3". (2) While the two
+// sides of a gap are still being placed, the outline's corners cannot be
+// picked up: the sides of a gap are walls, so a gap tap belongs close to a
+// corner, and on a phone that is inside the corner's reach. (3) A finger
+// reaches further than a mouse. (4) A point's reach shrinks when another
 // point is close, so the space between two points stays free for a new tap.
-// (4) A picked-up point moves only after the finger has travelled a little,
+// (5) A picked-up point moves only after the finger has travelled a little,
 // so a tap on a point leaves it where it was (see pointer.ts).
 import type { Pt } from "../measure/homography";
-import { building, handles, type Handle, type State } from "./state";
+import { building, handles, target, type Handle, type State } from "./state";
 
 /** How close a press must be to pick up a point, screen px. */
 export const REACH = { mouse: 12, touch: 24 };
@@ -37,7 +40,8 @@ export function pressOn(s: State, p: Pt, scale: number, pointerType: string): Pr
   const kind = pointerType === "mouse" ? "mouse" : "touch";
   const radius = REACH[kind] / scale;
   const floor = FLOOR[kind] / scale;
-  const all = handles(s);
+  const placingGap = target(s) === "gap";
+  const all = handles(s).filter(({ handle }) => !(placingGap && handle.group === "room"));
   let best: Handle | null = null;
   let bestD = Infinity;
   all.forEach(({ at, handle }, k) => {
