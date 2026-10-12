@@ -1,5 +1,6 @@
 // The page: load a photo, pass taps to the pointer rules, show the words.
 // The maths lives in ./measure, the rules in ./app, the screen in ./ui.
+// The Scan tab is wired at the bottom of this file.
 import { csvOf, planOf } from "./app/exports";
 import { createLater } from "./app/later";
 import { barsOf, sceneOf, solve, type Bars } from "./app/numbers";
@@ -15,13 +16,17 @@ import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
 import type { Plan } from "./measure/plan";
 import { referenceById } from "./measure/references";
 import { isMoving, wireTabs, wireView } from "./ui/controls";
-import { download, el } from "./ui/dom";
+import { download, el, list, say } from "./ui/dom";
 import { draw, drawCross, type Box, type Photo } from "./ui/draw";
 import { showPanel } from "./ui/panel";
 import { wirePhotoInputs } from "./ui/photo-input";
 import { wirePointer } from "./ui/pointer-events";
 import { readSettings, SETTING_IDS, writePictureSettings } from "./ui/settings";
 import { fitContain, type Fit } from "./ui/view";
+import { type ScanRoom, scanMeasures } from "./scan/geometry";
+import { SAMPLE_SCAN_ROOM } from "./scan/sample";
+import { checkArSupport, startScanSession, type ScanController } from "./scan/session";
+import { DEFAULT_ORBIT, drawRoom, wireOrbit, type OrbitState } from "./scan/view";
 
 const stage = el("stage");
 const canvas = el<HTMLCanvasElement>("photo");
@@ -200,3 +205,244 @@ wirePhotoInputs(usePhoto, (why) => {
 
 new ResizeObserver(layout).observe(stage);
 layout();
+
+// ─── Scan mode ──────────────────────────────────────────────────────────────
+
+const scanCanvas = el<HTMLCanvasElement>("scan-canvas");
+const scanOverlay = el("scan-ar-overlay");
+
+let scanMode = false;
+let scanRoom: ScanRoom | null = null;
+let scanOrbit: OrbitState = { ...DEFAULT_ORBIT };
+let scanController: ScanController | null = null;
+let scanCornerCount = 0;
+let scanPhase: "idle" | "floor" | "height" | "done" = "idle";
+let stopOrbit: (() => void) | null = null;
+
+/** True when the page is secure enough for WebXR (https or localhost). */
+const isSecure = window.isSecureContext;
+
+function setScanMode(on: boolean): void {
+  scanMode = on;
+  document.body.classList.toggle("scan-mode", on);
+  el("scan-panel").hidden = !on;
+  canvas.hidden = on;
+  scanCanvas.hidden = !on;
+
+  // Scan tab aria-selected.
+  el("tab-scan").setAttribute("aria-selected", String(on));
+  el("tab-scan").tabIndex = on ? 0 : -1;
+
+  if (on) {
+    // Deselect photo tabs.
+    for (const tid of ["tab-distance", "tab-room", "tab-fit"]) {
+      el(tid).setAttribute("aria-selected", "false");
+      el(tid).tabIndex = -1;
+    }
+    updateScanPanel();
+    if (scanRoom) renderScanCanvas();
+    // Wire drag-to-orbit.
+    stopOrbit = wireOrbit(scanCanvas, scanOrbit, (next) => {
+      scanOrbit = next;
+      if (scanRoom) renderScanCanvas();
+    });
+  } else {
+    stopOrbit?.();
+    stopOrbit = null;
+  }
+}
+
+function renderScanCanvas(): void {
+  if (!scanRoom) return;
+  const dpr = window.devicePixelRatio || 1;
+  const r = scanCanvas.getBoundingClientRect();
+  scanCanvas.width  = Math.round(r.width  * dpr);
+  scanCanvas.height = Math.round(r.height * dpr);
+  drawRoom(scanCanvas, scanRoom, scanOrbit);
+}
+
+function updateScanPanel(): void {
+  if (!scanMode) return;
+  const running = scanPhase === "floor" || scanPhase === "height";
+
+  // Step text.
+  const step =
+    scanPhase === "idle"   ? 'Press \u201cStart scan\u201d to walk the corners of your room, or try the sample.' :
+    scanPhase === "floor"  ? `Corner ${scanCornerCount} placed. Walk to the next corner and tap, or \u201cClose outline\u201d after three or more.` :
+    scanPhase === "height" ? "Point the camera at where a wall meets the ceiling and tap to set the height." :
+    /* done */               "Done. Drag the room above to orbit it.";
+  say("scan-step", step);
+
+  // Buttons.
+  el<HTMLButtonElement>("scan-start").disabled = running;
+  el("scan-close-btn").hidden = scanPhase !== "floor" || scanCornerCount < 3;
+  el("scan-undo-btn").hidden  = scanPhase !== "floor" || scanCornerCount === 0;
+
+  // Results.
+  const resultsEl = el("scan-results");
+  if (scanRoom) {
+    const m = scanMeasures(scanRoom.corners);
+    const rows: string[] = [];
+    if (m.ok) {
+      m.walls.forEach((w, i) =>
+        rows.push(`Wall ${i + 1}: ${(w * 100).toFixed(0)} cm (${w.toFixed(2)} m)`),
+      );
+      rows.push(`Perimeter: ${(m.perimeter * 100).toFixed(0)} cm`);
+      rows.push(`Floor area: ${m.area.toFixed(2)} m²`);
+    }
+    const hLabel = scanRoom.heightSource === "typed" ? "Height (typed, not checked)" : "Height";
+    rows.push(`${hLabel}: ${(scanRoom.height * 100).toFixed(0)} cm`);
+    list("scan-rows", rows);
+    resultsEl.hidden = false;
+  } else {
+    resultsEl.hidden = true;
+  }
+
+  // Sample box: always visible when not scanning.
+  el("scan-sample-box").hidden = running;
+}
+
+// AR overlay helpers.
+function updateArOverlay(corners: number, phase: "floor" | "height"): void {
+  el("scan-ar-step").textContent =
+    phase === "floor"
+      ? corners === 0
+        ? "Point at a floor corner and tap to place it."
+        : `${corners} corner${corners === 1 ? "" : "s"} placed. Walk to the next and tap.`
+      : "Point at where a wall meets the ceiling and tap.";
+  el("scan-ar-close").hidden = phase !== "floor" || corners < 3;
+  el("scan-ar-undo").hidden  = phase !== "floor" || corners === 0;
+}
+
+// Update the reticle colour based on whether a surface was found.
+function setReticle(found: boolean): void {
+  el("scan-reticle").classList.toggle("no-hit", !found);
+}
+
+// ── Start a live AR scan ────────────────────────────────────────────────────
+
+el("scan-start").addEventListener("click", async () => {
+  // Check support before trying.
+  const support = await checkArSupport();
+  if (!support.supported) {
+    el("scan-unsupported").hidden = false;
+    say("scan-unsupported-reason", support.reason ?? "AR is not available on this device.");
+    return;
+  }
+
+  scanCornerCount = 0;
+  scanPhase = "floor";
+  updateScanPanel();
+
+  // Show the AR overlay and hide the panel controls.
+  scanOverlay.hidden = false;
+  updateArOverlay(0, "floor");
+
+  const controller = await startScanSession(scanOverlay, {
+    onCorners(corners) {
+      scanCornerCount = corners.length;
+      updateArOverlay(scanCornerCount, "floor");
+    },
+    onPhase(phase) {
+      scanPhase = phase === "done" ? "done" : phase;
+      if (phase === "height") updateArOverlay(scanCornerCount, "height");
+    },
+    onReticle(pos) {
+      setReticle(pos !== null);
+    },
+    onComplete(corners, height, heightSource) {
+      scanRoom = { corners, height, heightSource };
+      scanPhase = "done";
+      scanOrbit = { ...DEFAULT_ORBIT };
+    },
+    onEnd() {
+      scanOverlay.hidden = true;
+      updateScanPanel();
+      if (scanRoom) renderScanCanvas();
+    },
+  });
+
+  scanController = controller;
+
+  if (!controller) {
+    scanPhase = "idle";
+    scanOverlay.hidden = true;
+    el("scan-unsupported").hidden = false;
+    say("scan-unsupported-reason", "The AR session could not start. Try Chrome for Android over HTTPS.");
+    updateScanPanel();
+  }
+});
+
+// AR overlay buttons (must delegate because the controller arrives async).
+el("scan-ar-cancel").addEventListener("click", () => scanController?.end());
+el("scan-ar-close").addEventListener("click", () => scanController?.closeOutline());
+el("scan-ar-undo").addEventListener("click",  () => {
+  scanController?.undoLast();
+  scanCornerCount = Math.max(0, scanCornerCount - 1);
+  updateArOverlay(scanCornerCount, "floor");
+});
+
+// ── Panel buttons ───────────────────────────────────────────────────────────
+
+el("scan-close-btn").addEventListener("click", () => {
+  scanController?.closeOutline();
+  el("scan-close-btn").hidden = true;
+  el("scan-undo-btn").hidden  = true;
+});
+el("scan-undo-btn").addEventListener("click", () => {
+  scanController?.undoLast();
+  scanCornerCount = Math.max(0, scanCornerCount - 1);
+  updateScanPanel();
+});
+
+// Typed height fallback.
+el("scan-height-ok").addEventListener("click", () => {
+  const input = el<HTMLInputElement>("scan-height-input");
+  const h = parseFloat(input.value);
+  if (!(h > 0)) return;
+  // If the scan ended already, apply height to current room corners.
+  if (scanRoom) {
+    scanRoom = { ...scanRoom, height: h, heightSource: "typed" };
+  }
+  el("scan-height-box").hidden = true;
+  updateScanPanel();
+  if (scanRoom) renderScanCanvas();
+});
+
+// ── Sample room ─────────────────────────────────────────────────────────────
+
+el("scan-sample-btn").addEventListener("click", () => {
+  scanRoom = SAMPLE_SCAN_ROOM;
+  scanPhase = "done";
+  scanOrbit = { ...DEFAULT_ORBIT };
+  updateScanPanel();
+  renderScanCanvas();
+});
+
+// ── Scan tab button ─────────────────────────────────────────────────────────
+
+el("tab-scan").addEventListener("click", () => {
+  if (scanMode) return; // already in scan mode
+  setScanMode(true);
+});
+
+// Hook photo tabs so clicking one exits scan mode.
+for (const tid of ["tab-distance", "tab-room", "tab-fit"]) {
+  el(tid).addEventListener("click", () => {
+    if (scanMode) setScanMode(false);
+  });
+}
+
+// Show unsupported notice immediately when scan tab is opened on a non-secure page.
+el("tab-scan").addEventListener("click", () => {
+  if (!isSecure) {
+    el("scan-unsupported").hidden = false;
+    say(
+      "scan-unsupported-reason",
+      "AR needs HTTPS. Open the page at the HTTPS address printed by \u201cnpm run dev:https\u201d (see the Scan tab). The sample room still works.",
+    );
+  }
+});
+
+// Resize the scan canvas whenever the stage resizes.
+new ResizeObserver(() => { if (scanMode && scanRoom) renderScanCanvas(); }).observe(stage);

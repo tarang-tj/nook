@@ -9,12 +9,14 @@
   },
   "scripts": {
     "dev": "vite --host",
+    "dev:https": "vite --host --config vite.https.config.ts",
     "check": "tsc --noEmit",
     "test": "vitest run",
     "build": "vite build --base=./",
     "preview": "vite preview --host"
   },
   "devDependencies": {
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
     "typescript": "5.9.3",
     "vite": "8.3.3",
     "vitest": "5.0.3"

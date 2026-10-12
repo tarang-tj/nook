@@ -20,6 +20,13 @@
         aria-label="Your photo. Tap or click to place points. With the keyboard: plus and minus zoom, 0 fits, arrows slide, Enter places a point at the cross in the middle."
       ></canvas>
       <canvas id="loupe" width="132" height="132" hidden aria-hidden="true"></canvas>
+      <canvas
+        id="scan-canvas"
+        hidden
+        tabindex="-1"
+        role="img"
+        aria-label="3-D room view. Drag or touch to orbit."
+      ></canvas>
       <p id="empty">
         Lay one sheet of paper flat on the floor. Take a photo with the whole sheet and what you
         want to measure in view. Then tap the four corners of the sheet and the spots to measure.
@@ -28,21 +35,22 @@
     </main>
 
     <section id="panel" aria-label="Controls and results">
-      <div class="row" id="zoom">
+      <div class="row photo-only" id="zoom">
         <button id="zoom-out" type="button" aria-label="Zoom out">&minus;</button>
         <button id="zoom-in" type="button" aria-label="Zoom in">+</button>
         <button id="zoom-fit" type="button">Fit</button>
         <button id="move" type="button" aria-pressed="false">Move photo</button>
       </div>
-      <p id="zoom-text" class="small"></p>
+      <p id="zoom-text" class="small photo-only"></p>
 
       <div class="tabs" role="tablist" aria-label="What to measure">
         <button id="tab-distance" role="tab" type="button" data-tool="distance" aria-selected="true" aria-controls="tool">Distance</button>
         <button id="tab-room" role="tab" type="button" data-tool="room" aria-selected="false" aria-controls="tool" tabindex="-1">Room</button>
         <button id="tab-fit" role="tab" type="button" data-tool="fit" aria-selected="false" aria-controls="tool" tabindex="-1">Fit</button>
+        <button id="tab-scan" role="tab" type="button" aria-selected="false" tabindex="-1">Scan</button>
       </div>
 
-      <div id="tool" role="tabpanel" aria-labelledby="tab-distance">
+      <div id="tool" class="photo-only" role="tabpanel" aria-labelledby="tab-distance">
         <p id="notice" class="problem" role="alert" hidden></p>
         <p id="step" aria-live="polite"></p>
 
@@ -89,13 +97,61 @@
         </div>
       </div>
 
-      <div class="row" id="actions">
+      <!-- ─── Scan mode panel ────────────────────────────────────────────── -->
+      <div id="scan-panel" hidden>
+        <p id="scan-step" aria-live="polite" class="small"></p>
+
+        <div id="scan-unsupported" class="problem" hidden>
+          <p id="scan-unsupported-reason"></p>
+          <p class="small">
+            Live scan needs Chrome for Android over HTTPS with ARCore.
+            Use "Try a sample room" to see what the result looks like.
+          </p>
+        </div>
+
+        <div class="row">
+          <button id="scan-start" type="button">Start scan</button>
+          <button id="scan-close-btn" type="button" hidden>Close outline</button>
+          <button id="scan-undo-btn" type="button" hidden>Undo corner</button>
+        </div>
+
+        <div id="scan-height-box" class="extra" hidden>
+          <p class="small">
+            No ceiling surface was found at the tap. Type the room height to finish.
+          </p>
+          <div class="row">
+            <label>Height <input id="scan-height-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="2.4" /></label>
+            <span class="small">m</span>
+            <button id="scan-height-ok" type="button">Set height</button>
+          </div>
+        </div>
+
+        <div id="scan-results" hidden aria-live="polite">
+          <ul id="scan-rows"></ul>
+          <p class="small problem">
+            Draft only. Not checked against a tape measure. Phone tracking can drift as
+            you walk, so these numbers may be wrong by more than they look. They are not
+            evidence.
+          </p>
+        </div>
+
+        <div id="scan-sample-box">
+          <p class="small">
+            No phone? Press below to see what the result looks like on a made-up
+            4 m × 3 m room, 2.4 m tall. Drag the view to orbit.
+          </p>
+          <button id="scan-sample-btn" type="button">Try a sample room</button>
+        </div>
+      </div>
+      <!-- ─────────────────────────────────────────────────────────────── -->
+
+      <div class="row photo-only" id="actions">
         <button id="undo" type="button" disabled>Undo</button>
         <button id="reset" type="button" disabled>Start over</button>
         <button id="close" type="button" hidden>Close outline</button>
       </div>
 
-      <div class="row">
+      <div class="row photo-only">
         <label class="button">
           Take photo
           <input id="take" class="visually-hidden" type="file" accept="image/*" capture="environment" />
@@ -106,7 +162,7 @@
         </label>
         <button id="sample" type="button">Try the sample</button>
       </div>
-      <div id="sample-box" hidden>
+      <div id="sample-box" class="photo-only" hidden>
         <p class="small">
           This is a made-up floor drawn by the page, not a photo of a real room. The page knows
           where on this floor each tap really is, so the true value for the spots as tapped is
@@ -119,81 +175,96 @@
         </p>
       </div>
 
-      <h2>The sheet</h2>
-      <div class="row">
-        <label>
-          Paper
-          <select id="paper">
-            <option value="letter">US Letter</option>
-            <option value="a4">A4</option>
-          </select>
-        </label>
-        <label>
-          Units
-          <select id="unit">
-            <option value="cm">cm</option>
-            <option value="in">inches</option>
-          </select>
-        </label>
-      </div>
-      <p id="paper-note" class="small" role="status" hidden></p>
-      <label class="check">
-        <input id="swap" type="checkbox" />
-        Swap the sheet's long and short sides
-      </label>
-      <p id="sheet-words" class="small"></p>
-      <p class="small">
-        Tick the box if a long label in the photo sits on one of the paper's short sides. Nothing
-        else catches that mistake.
-      </p>
-
-      <h2>Tighter accuracy (optional)</h2>
-      <p class="small">
-        One sheet pins the floor down well near itself and poorly far from it. A second known
-        size, lying out where you are measuring, tightens the far numbers.
-      </p>
-      <div class="row">
-        <button id="add-second" type="button">Add a second sheet</button>
-        <button id="add-span" type="button">Add a known length</button>
-      </div>
-      <div id="second-box" class="extra" hidden>
+      <div class="photo-only">
+        <h2>The sheet</h2>
         <div class="row">
           <label>
-            Second sheet's paper
-            <select id="paper2">
+            Paper
+            <select id="paper">
               <option value="letter">US Letter</option>
               <option value="a4">A4</option>
             </select>
           </label>
-        </div>
-        <label class="check">
-          <input id="swap2" type="checkbox" />
-          Swap the second sheet's long and short sides
-        </label>
-        <p id="second-words" class="small"></p>
-        <button id="remove-second" type="button">Remove the second sheet</button>
-      </div>
-      <div id="span-box" class="extra" hidden>
-        <div class="row">
           <label>
-            Its length
-            <input id="span-length" type="number" inputmode="decimal" min="0" step="any" />
+            Units
+            <select id="unit">
+              <option value="cm">cm</option>
+              <option value="in">inches</option>
+            </select>
           </label>
-          <span id="span-unit" class="small"></span>
         </div>
-        <button id="remove-span" type="button">Remove the known length</button>
+        <p id="paper-note" class="small" role="status" hidden></p>
+        <label class="check">
+          <input id="swap" type="checkbox" />
+          Swap the sheet's long and short sides
+        </label>
+        <p id="sheet-words" class="small"></p>
+        <p class="small">
+          Tick the box if a long label in the photo sits on one of the paper's short sides. Nothing
+          else catches that mistake.
+        </p>
+
+        <h2>Tighter accuracy (optional)</h2>
+        <p class="small">
+          One sheet pins the floor down well near itself and poorly far from it. A second known
+          size, lying out where you are measuring, tightens the far numbers.
+        </p>
+        <div class="row">
+          <button id="add-second" type="button">Add a second sheet</button>
+          <button id="add-span" type="button">Add a known length</button>
+        </div>
+        <div id="second-box" class="extra" hidden>
+          <div class="row">
+            <label>
+              Second sheet's paper
+              <select id="paper2">
+                <option value="letter">US Letter</option>
+                <option value="a4">A4</option>
+              </select>
+            </label>
+          </div>
+          <label class="check">
+            <input id="swap2" type="checkbox" />
+            Swap the second sheet's long and short sides
+          </label>
+          <p id="second-words" class="small"></p>
+          <button id="remove-second" type="button">Remove the second sheet</button>
+        </div>
+        <div id="span-box" class="extra" hidden>
+          <div class="row">
+            <label>
+              Its length
+              <input id="span-length" type="number" inputmode="decimal" min="0" step="any" />
+            </label>
+            <span id="span-unit" class="small"></span>
+          </div>
+          <button id="remove-span" type="button">Remove the known length</button>
+        </div>
+        <p id="used" hidden></p>
+        <p id="exact" class="small">
+          A paper size and a typed length are taken as exact. Nothing on this page checks them. If
+          one is wrong, the numbers near it are wrong with it, and their error bars will not show
+          it. The page refuses only when two references disagree by far more than tap error
+          explains, which catches a gross mistake near the first sheet and little else. No refusal
+          does not mean the references are right.
+        </p>
       </div>
-      <p id="used" hidden></p>
-      <p id="exact" class="small">
-        A paper size and a typed length are taken as exact. Nothing on this page checks them. If
-        one is wrong, the numbers near it are wrong with it, and their error bars will not show
-        it. The page refuses only when two references disagree by far more than tap error
-        explains, which catches a gross mistake near the first sheet and little else. No refusal
-        does not mean the references are right.
-      </p>
 
       <p class="small">Your photo stays on this device. Nothing is uploaded.</p>
     </section>
+
+    <!-- AR session overlay — shown by WebXR on top of the camera feed.
+         Must be in the DOM at session start time; JavaScript shows/hides it. -->
+    <div id="scan-ar-overlay" hidden aria-label="Room scanning in progress">
+      <div id="scan-reticle" aria-hidden="true"></div>
+      <p id="scan-ar-step" aria-live="polite"></p>
+      <p id="scan-ar-dist" aria-live="polite" class="small"></p>
+      <div class="scan-ar-btns">
+        <button id="scan-ar-close" type="button" hidden>Close outline</button>
+        <button id="scan-ar-undo" type="button" hidden>Undo</button>
+        <button id="scan-ar-cancel" type="button">Cancel</button>
+      </div>
+    </div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -29,6 +29,8 @@ What it does (draft sample, extended 2026-10-12 so the team has more to react to
 - When it cannot give an honest number, it says why and shows none. In made-up scenes this was checked for a distance, a wall, the perimeter, the area, a gap, the plan (not drawn unless every wall has a number) and the Fit tab's inside verdict (not given when a wall of the outline has no number). It has not been checked beyond those.
 - The photo never leaves the device.
 
+- Has a **Scan** tab. This is another draft sample, not a product direction. It has a "Try a sample room" button (a made-up 4 m × 3 m room, 2.4 m tall) that can be tried on a laptop to see what the result view looks like. The tab also has a "Start scan" button. On a phone running Chrome for Android that is opened over HTTPS with ARCore support, it starts a live walk-around scan: a reticle sits at the surface the phone is pointing at; the person taps each floor corner in order, closes the outline, then taps a ceiling point to set the height. The app draws the four walls and ceiling from those points and lists each wall length, the perimeter, the floor area, and the height. If the ceiling tap finds no surface the person can type the height instead. The scan has been tried on a made-up room, not a real room, and it has not been checked against a tape measure. Phone tracking can drift as you walk, so the numbers may be wrong. There is no error bar. To open the prototype over HTTPS on a phone (so "Start scan" can start), run `npm run dev:https` and open the Network address it prints; the phone will ask you to accept a self-signed certificate.
+
 What it does not do:
 
 - It does not scan a room. Every number comes from spots a person tapped on one photo of one flat floor.
