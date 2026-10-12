@@ -51,6 +51,5 @@ There are other depth models. We have not surveyed them.
 3. What does a person need to get out of it: one distance, a floor plan, a 3D model? How accurate does it need to be for them to trust it?
 4. Does anyone on the team want to build an iOS app, and have what that takes? Option A needs it.
 5. What does the course expect us to show on Dec 9: a working app, a demo, or evidence from customers?
-6. What is the course policy on AI-written code? It affects how much of any option we can build this way.
-7. Is "a phone browser page" enough, or does it need to be an installed app?
-8. How does option B do against a tape measure in a real room? One afternoon of testing would tell us.
+6. Is "a phone browser page" enough, or does it need to be an installed app?
+7. How does option B do against a tape measure in a real room? One afternoon of testing would tell us.
