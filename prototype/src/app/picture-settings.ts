@@ -3,7 +3,7 @@
 // picture, or the next one is solved from the last one's answers with nothing
 // on screen to show it. The made-up floor knows its own papers and sets them,
 // and its papers must not outlive it either. Pure.
-import { REFERENCES } from "../measure/references";
+import { REFERENCES, referenceById } from "../measure/references";
 import { SAMPLE_TRUTH } from "../sample/floor";
 import type { Settings } from "./numbers";
 
@@ -29,10 +29,17 @@ export type Aside = { paper: string } | null;
  * made-up floor takes over the first paper, so the person's choice is kept
  * to one side and put back for the next photo. Without that an A4 sheet in
  * the next photo would be solved as US Letter because a sample was looked at. */
-export function startPicture(set: Settings, sample: boolean, aside: Aside): { set: Settings; aside: Aside } {
+export function startPicture(set: Settings, sample: boolean, aside: Aside): { set: Settings; aside: Aside; back: string } {
   const own = aside?.paper ?? set.paper;
-  return { set: forNewPicture({ ...set, paper: own }, sample), aside: sample ? { paper: own } : null };
+  // Said on the page only when the paper on screen changes under the person.
+  const back = !sample && own !== set.paper ? putBackNote(own) : "";
+  return { set: forNewPicture({ ...set, paper: own }, sample), aside: sample ? { paper: own } : null, back };
 }
+
+/** The line under Paper when a photo follows the made-up floor and the paper
+ * went back to the person's own: the page changed it, so the page says so. */
+export const putBackNote = (paper: string): string =>
+  `Paper is back to ${referenceById(paper).label}, the size chosen before the sample floor. Change it if the sheet in this photo is a different size.`;
 
 /** The person picks the first paper by hand. While the made-up floor is up
  * that pick is theirs, so it replaces the one set aside: the next photo is

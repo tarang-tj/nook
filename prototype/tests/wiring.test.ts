@@ -4,6 +4,7 @@
 // check was seen to fail with its wire cut.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CSV_HEADER } from "../src/measure/plan";
+import { putBackNote } from "../src/app/picture-settings";
 import { startPage, stopPage } from "./fake-dom";
 
 afterEach(stopPage);
@@ -66,10 +67,26 @@ describe("the page, wired", () => {
     page.press("sample-taps");
     page.press("reset"); // Start over, still on the made-up floor
     expect(page.el("paper").value).toBe("letter");
+    expect(page.el("paper-note").hidden).toBe(true);
     page.loadPhoto();
     expect(page.el("paper").value).toBe("a4"); // the person's own choice is back
-    page.loadPhoto();
+    // The page changed the paper, so the page says so.
+    expect(page.el("paper-note").hidden).toBe(false);
+    expect(page.el("paper-note").textContent).toBe(putBackNote("a4"));
+    page.loadPhoto(); // nothing changes this time: nothing to say
     expect(page.el("paper").value).toBe("a4");
+    expect(page.el("paper-note").hidden).toBe(true);
+  });
+
+  it("the note about the paper goes when the paper is picked by hand", async () => {
+    const page = await startPage();
+    page.set("paper", "a4");
+    page.press("sample");
+    page.loadPhoto();
+    expect(page.el("paper-note").hidden).toBe(false);
+    page.set("paper", "letter");
+    expect(page.el("paper-note").hidden).toBe(true);
+    expect(page.el("paper-note").textContent).toBe("");
   });
 
   it("a paper picked while the made-up floor is up is kept for the next photo", async () => {
