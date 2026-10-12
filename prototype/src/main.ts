@@ -133,9 +133,18 @@ const freshSettings = () => {
   const next = startPicture(readSettings(), sample, aside);
   aside = next.aside;
   writePictureSettings(next.set);
+  paperNote(next.back);
+};
+/** The line under Paper, shown only while it has something to say. */
+const paperNote = (words: string) => {
+  el("paper-note").textContent = words;
+  el("paper-note").hidden = !words;
 };
 const paperBox = el<HTMLSelectElement>("paper");
-paperBox.addEventListener("change", () => { aside = paperPicked(aside, paperBox.value); });
+paperBox.addEventListener("change", () => {
+  aside = paperPicked(aside, paperBox.value);
+  paperNote("");
+});
 act("reset", () => {
   reset(state);
   freshSettings();

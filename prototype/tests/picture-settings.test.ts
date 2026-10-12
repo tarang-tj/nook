@@ -2,7 +2,7 @@
 // long the known length is) must not carry over to the next picture, and the
 // made-up floor sets its own.
 import { describe, expect, it } from "vitest";
-import { forNewPicture, paperPicked, startPicture, withoutExtra } from "../src/app/picture-settings";
+import { forNewPicture, paperPicked, putBackNote, startPicture, withoutExtra } from "../src/app/picture-settings";
 import { placeSampleTaps } from "../src/app/sample-taps";
 import { newState, type State, type Tool } from "../src/app/state";
 import { SAMPLE_TRUTH } from "../src/sample/floor";
@@ -51,6 +51,13 @@ describe("the first paper, across the made-up floor and back", () => {
     const onPhoto = startPicture(onSample.set, false, onSample.aside);
     expect(onPhoto.set.paper).toBe("a4");
     expect(onPhoto.aside).toBeNull();
+    // Said only when the paper on screen changed: not for the made-up floor
+    // itself, and not for a photo that keeps the paper it had.
+    expect(onSample.back).toBe("");
+    expect(onPhoto.back).toBe(putBackNote("a4"));
+    expect(onPhoto.back).toContain("Paper is back to A4");
+    expect(startPicture(onPhoto.set, false, onPhoto.aside).back).toBe("");
+    expect(startPicture({ ...LEFT, paper: "letter" }, false, { paper: "letter" }).back).toBe("");
   });
 
   it("survives Start over and a second Try the sample while the made-up floor is up", () => {

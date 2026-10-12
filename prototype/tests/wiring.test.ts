@@ -4,6 +4,7 @@
 // check was seen to fail with its wire cut.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CSV_HEADER } from "../src/measure/plan";
+import { putBackNote } from "../src/app/picture-settings";
 import { startPage, stopPage } from "./fake-dom";
 
 afterEach(stopPage);
@@ -17,6 +18,11 @@ const papers = (page: Awaited<ReturnType<typeof startPage>>) => ({
 });
 
 describe("the page, wired", () => {
+  it("starts with no note under Paper", async () => {
+    const page = await startPage();
+    expect(page.el("paper-note").hidden).toBe(true);
+  });
+
   it("starts as index.html has it", async () => {
     const page = await startPage();
     expect(papers(page)).toEqual({ paper: "letter", swap: false, paper2: "letter", swap2: false, span: "" });
@@ -66,18 +72,38 @@ describe("the page, wired", () => {
     page.press("sample-taps");
     page.press("reset"); // Start over, still on the made-up floor
     expect(page.el("paper").value).toBe("letter");
+    expect(page.el("paper-note").hidden).toBe(true);
     page.loadPhoto();
     expect(page.el("paper").value).toBe("a4"); // the person's own choice is back
-    page.loadPhoto();
+    // The page changed the paper, so the page says so.
+    expect(page.el("paper-note").hidden).toBe(false);
+    expect(page.el("paper-note").textContent).toBe(putBackNote("a4"));
+    page.loadPhoto(); // nothing changes this time: nothing to say
     expect(page.el("paper").value).toBe("a4");
+    expect(page.el("paper-note").hidden).toBe(true);
+  });
+
+  it("the note about the paper goes when the paper is picked by hand", async () => {
+    const page = await startPage();
+    page.set("paper", "a4");
+    page.press("sample");
+    page.loadPhoto();
+    expect(page.el("paper-note").hidden).toBe(false);
+    page.set("paper", "letter");
+    expect(page.el("paper-note").hidden).toBe(true);
+    expect(page.el("paper-note").textContent).toBe("");
   });
 
   it("a paper picked while the made-up floor is up is kept for the next photo", async () => {
     const page = await startPage();
     page.press("sample");
     page.set("paper", "a4"); // picked by hand, with the made-up floor showing
+    page.press("reset"); // Start over puts the floor's own paper back on screen
     page.loadPhoto();
     expect(page.el("paper").value).toBe("a4");
+    // The note must be true here too: this A4 was picked during the sample.
+    expect(page.el("paper-note").textContent).toContain("the size you picked last");
+    expect(page.el("paper-note").textContent).not.toContain("before");
     page.press("sample");
     page.press("tab-room");
     page.press("sample-taps"); // the page sets the floor's own paper: not a pick

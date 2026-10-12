@@ -8,7 +8,7 @@
 | --- | --- |
 | What was decided on the 2026-10-08 call? Nothing from it is recorded in this repository. | Anyone who was on the call |
 | What roles does each person want? Roles are not recorded anywhere we can see. | The team, together |
-| What is the course policy on AI-written code and AI-written text in the graded project? | The instructor, or the syllabus on Canvas |
+| What is the course policy on AI-written text in graded documents? For AI-written code, TJ said on 2026-10-12 that the course has no policy. That answer did not cover text. | The instructor, or the syllabus on Canvas |
 | Are the dates in the README right? They are from TJ's notes of the syllabus. | Anyone, by checking Canvas |
 | Where do the team's documents live (contract, pitch, canvas)? Should this repository link to them? | The team |
 | Does the team want this repository at all, or would a shared drive suit everyone better? | The team |
@@ -53,7 +53,7 @@ The prototype grew four ways in one go so the team could see them side by side: 
 | The page keeps nothing after a reload. Should it? Keeping a photo of someone's room raises privacy questions the team has not discussed. | The team |
 | How should teammates open the sample? Today it runs only from a laptop on the same network. Hosting it anywhere would make the team's project public or need accounts, and that is a team decision. | The team |
 | More of the measuring code now comes from SPECTRA, which is TJ's and has no open licence. Does that change the licence question above? | The team, with TJ |
-| The new parts were written with AI assistance, like the first version. Does the course policy allow them in graded work? | The instructor, or the syllabus on Canvas |
+| The new parts were written with AI assistance, like the first version. TJ said on 2026-10-12 that the course has no policy on AI-written code. Does the team want them in graded work? | The team |
 | The accuracy counts in the brief come from made-up scenes. Who will do the first check against a tape measure, and what result would make the method not worth pursuing? | The team |
 
 ## About customers
