@@ -22,7 +22,7 @@ export type Mat3 = readonly [
 
 /** Solve A x = b by Gaussian elimination with partial pivoting.
  * Returns null when the equations have no single answer. */
-function solveLinear(a: number[][], b: number[]): number[] | null {
+export function solveLinear(a: number[][], b: number[]): number[] | null {
   const n = b.length;
   const m = a.map((row, i) => [...row, b[i]]);
   for (let col = 0; col < n; col++) {
@@ -46,7 +46,7 @@ function solveLinear(a: number[][], b: number[]): number[] | null {
 }
 
 /** Matrix product p * q. */
-function mul(p: Mat3, q: Mat3): Mat3 {
+export function mul(p: Mat3, q: Mat3): Mat3 {
   const out: number[] = [];
   for (let r = 0; r < 3; r++)
     for (let c = 0; c < 3; c++)
