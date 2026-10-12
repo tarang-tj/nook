@@ -4,6 +4,9 @@ import { createPointer, type Tap } from "./app/pointer";
 import { report, UNCHECKED, type Settings } from "./app/report";
 import { sheetEdges } from "./app/sheet-edges";
 import { referenceById } from "./measure/references";
+import { placeSampleTaps } from "./app/sample-taps";
+import { drawSampleFloor } from "./sample/draw";
+import { SAMPLE_SIZE } from "./sample/floor";
 import { hasTaps, newState, reset, undo } from "./app/state";
 import { clampView, isFitted, panBy, zoomAt, zoomWords, ZOOM_STEP } from "./app/zoom";
 import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
@@ -35,11 +38,15 @@ const noticeText = el<HTMLElement>("notice");
 const unchecked = el<HTMLElement>("unchecked");
 const basisBox = el<HTMLElement>("basis-box");
 const sheetWordsText = el<HTMLElement>("sheet-words");
+const truthText = el<HTMLElement>("truth");
+const sampleBox = el<HTMLElement>("sample-box");
 
 const state = newState();
 let photo: Photo | null = null;
 /** A message that stays up until a photo loads: a file that would not open. */
 let notice = "";
+/** The made-up sample floor is showing, not a photo. */
+let sample = false;
 let fit: Fit = { scale: 1, dx: 0, dy: 0 };
 let box: Box = { w: 1, h: 1, dpr: 1 };
 const pointer = createPointer({
@@ -84,7 +91,11 @@ function render(): void {
   zoomText.textContent = photo ? zoomWords(fit, TAP_SIGMA_SCREEN_PX) : "";
   // The view as numbers, for anyone driving the page from a script.
   canvas.dataset.view = [fit.scale, fit.dx, fit.dy].join(",");
-  const words = report(state, { hasPhoto: !!photo, notice }, now);
+  const words = report(state, { hasPhoto: !!photo, notice, sample }, now);
+  truthText.hidden = !words.truth;
+  truthText.textContent = words.truth;
+  sampleBox.hidden = !sample;
+  document.body.classList.toggle("no-photo", !photo); // hides what needs a photo
   noticeText.hidden = !words.notice;
   noticeText.textContent = words.notice;
   step.textContent = words.step;
@@ -194,8 +205,9 @@ resetButton.addEventListener("click", () => {
 for (const control of [swap, paper, unitSelect]) control.addEventListener("change", render);
 
 /** Show a new picture, whole, with no taps on it. */
-function usePhoto(next: Photo): void {
+function usePhoto(next: Photo, madeUp = false): void {
   photo = next;
+  sample = madeUp;
   notice = "";
   reset(state);
   empty.hidden = true;
@@ -225,6 +237,14 @@ for (const id of ["take", "choose"]) {
   const input = el<HTMLInputElement>(id);
   input.addEventListener("change", () => load(input));
 }
+
+el("sample").addEventListener("click", () => {
+  usePhoto({ source: drawSampleFloor(), ...SAMPLE_SIZE }, true);
+});
+el("sample-taps").addEventListener("click", () => {
+  placeSampleTaps(state);
+  render();
+});
 
 new ResizeObserver(layout).observe(stage);
 layout();

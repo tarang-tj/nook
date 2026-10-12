@@ -4,7 +4,8 @@ import { measureFloorDistance } from "../measure/floor-distance";
 import { referenceById } from "../measure/references";
 import { degenerateReason, orderCorners } from "../measure/sheet";
 import type { Unit } from "../measure/units";
-import { sheetWords } from "./sheet-edges";
+import { SAMPLE_TRUTH } from "../sample/floor";
+import { sheetWords, sideText } from "./sheet-edges";
 import type { State } from "./state";
 
 /** The choices made with the controls, read off the page by main.ts. */
@@ -12,7 +13,7 @@ export type Settings = { paper: string; swap: boolean; unit: Unit };
 
 /** What the page itself knows: whether a photo is loaded, and a message
  * that must stay up until something replaces it (a file that would not open). */
-export type Page = { hasPhoto: boolean; notice: string };
+export type Page = { hasPhoto: boolean; notice: string; /** The made-up sample floor is showing. */ sample?: boolean };
 
 /** The one sentence that is always on screen, even with the long text folded away. */
 export const UNCHECKED = "Not checked against a tape measure or a real photo. The ± covers tap placement only.";
@@ -26,16 +27,22 @@ export type Report = {
   basis: string;
   /** The paper size and long side the page assumed for the sheet. */
   sheet: string;
+  /** On the made-up floor only: the true value, to compare with the result. */
+  truth: string;
 };
 
 export function report(s: State, page: Page, settings: Settings): Report {
   const words = wordsFor(s, page.hasPhoto, settings);
   const sheet =
     s.points.sheet.length === 4 ? sheetWords("Sheet", referenceById(settings.paper), settings.swap, settings.unit) : "";
-  return { ...words, notice: page.notice, sheet };
+  const truth =
+    page.sample && s.points.ends.length === 2
+      ? `True value on this made-up floor: A to B is ${sideText(SAMPLE_TRUTH.distance, settings.unit)}.`
+      : "";
+  return { ...words, notice: page.notice, sheet, truth };
 }
 
-type Words = Omit<Report, "notice" | "sheet">;
+type Words = Omit<Report, "notice" | "sheet" | "truth">;
 
 const problem = (step: string, text: string): Words => ({
   step, result: `No measurement. ${text}`, problem: true, basis: "",

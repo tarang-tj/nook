@@ -92,8 +92,11 @@ details[open] > summary::before { content: "\2212"; }
   padding: 4px max(12px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-bottom));
 }
 #zoom button { min-width: 44px; }
+.no-photo #zoom, .no-photo #actions, .no-photo #zoom-text { display: none; }
 #result { display: block; font-size: 22px; font-weight: 650; }
 #result.problem { font-size: 15px; font-weight: 500; }
+#truth { font-weight: 600; }
+#sample-box { border-left: 3px solid var(--accent); padding-left: 10px; margin: 6px 0; }
 
 /* A wide or a sideways screen: photo on the left, panel on the right. */
 @media (min-aspect-ratio: 1/1) {
