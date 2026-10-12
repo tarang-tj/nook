@@ -7,7 +7,7 @@ Nook is our BUS 444 (UW Bothell, Autumn 2026) team project, described on the tea
 ## Status
 
 - A shared place for the team's work, with draft notes written as options and open questions.
-- A small web prototype that measures one distance on a floor from one photo. It is a baseline to react to, not a product direction. It has been run in a laptop browser on a made-up picture. It has not been tried on a real phone, on a real photo, or checked against a tape measure.
+- A small web prototype, a draft sample, that measures things on a floor from one photo: a distance, a room outline with a plan from above, and a simple "will it fit" example. It is something to react to, not a product direction. It has been run in a laptop browser, at phone size and at desktop size, on made-up pictures. It has never been tried on a real phone, a real photo or against a tape measure.
 - No product decisions are recorded here. See [docs/decisions](docs/decisions/README.md) for how to record one.
 
 ## Run the prototype
@@ -22,23 +22,42 @@ npm ci          # install the exact versions in package-lock.json
 npm run dev     # start the local server
 ```
 
-Open the `Local` address it prints. Use "Choose photo" to pick a picture.
+Open the `Local` address it prints. Press "Try the sample" to see the whole flow on a made-up floor with no photo of your own, or use "Choose photo" to pick a picture.
 
-On a phone:
+On a phone, over the local network:
 
 1. Put the phone and the laptop on the same Wi-Fi.
-2. Run `npm run dev` on the laptop. It also prints a `Network` address.
-3. Open that address in the phone's browser. "Take photo" should open the camera.
+2. Run `npm run dev` on the laptop. It also prints a `Network` address, something like `http://192.168.1.23:5173/`.
+3. Type that address into the phone's browser. "Take photo" should open the camera. "Try the sample" needs no camera.
+4. Stop the server with Ctrl+C when you are done. While it runs, anyone on that network can open the page.
 
-The page uses an ordinary file picker, not live camera access, so it should work over plain `http` on a local network. Nobody has tried it on a real phone yet. If it does not work on yours, please add what you saw to [docs/open-questions.md](docs/open-questions.md). If the phone cannot reach the address at all, the network may be keeping the two devices apart. We have not tested which networks do.
+The page uses an ordinary file picker, not live camera access, so it should work over plain `http` on a local network. Nobody has tried it on a real phone yet. If it does not work on yours, please add what you saw to [docs/open-questions.md](docs/open-questions.md). If the phone cannot reach the address at all, the network may be keeping the two devices apart. We have not tested which networks do. A phone's own hotspot, shared by the laptop and the phones, may get round that. That is untested too.
 
-How to use it: lay one sheet of US Letter or A4 paper flat on the floor, take a photo with the sheet and the two spots you care about in view, tap the four corners of the sheet, then tap the two spots. The page shows the distance with an error bar and says what the bar covers and leaves out. Your photo stays on your device. Nothing is uploaded.
+To check a change before a pull request, run the same four steps GitHub runs, inside `prototype/`:
+
+```sh
+npm ci && npm run check && npm test && npm run build
+```
+
+### How to use it
+
+Lay one sheet of US Letter or A4 paper flat on the floor. Take a photo with the whole sheet and what you want to measure in view. Tap the four corners of the sheet. Zoom in first (pinch, the mouse wheel, or the plus button): a tap made zoomed out counts as far less exact, and the page will often refuse to give a number. Then pick a tab:
+
+| Tab | What you do | What you get |
+| --- | --- | --- |
+| Distance | Tap two spots on the floor. | The distance between them, with an error bar. |
+| Room | Tap the corners where the walls meet the floor, in order, going round. Tap the first corner again, or press "Close outline". | Each wall, the perimeter and the floor area, each with an error bar or the reason there is none. A plan from above. Buttons that save the plan as an SVG file and the walls as a CSV file. |
+| Fit | Tap the two sides of a gap and type a width and a depth. If you closed an outline on the Room tab, drag the dashed box on the photo. | "Fits", "does not fit" or "too close to call" for the gap, and whether the box is inside the outline. Floor only: it says nothing about height. This tab is one example of what a measured outline allows, not the point of the sample. |
+
+Under "Tighter accuracy" you can add a second sheet (four more taps) or one known length (two taps and a typed length). They narrow the error bars far from the first sheet. The page takes a paper size and a typed length as exact and does not check them.
+
+Every result comes with words that say what its error bar covers and leaves out. Nothing has been checked against a tape measure. Your photo stays on your device. Nothing is uploaded. The SVG and CSV files are made in the browser.
 
 ## What is in this repository
 
 | Path | What it is |
 | --- | --- |
-| [docs/product-brief.md](docs/product-brief.md) | Draft brief. What the prototype does and does not do, and headings for the team to fill. |
+| [docs/product-brief.md](docs/product-brief.md) | Draft brief. What the prototype does and does not do, what is known about its accuracy, and headings for the team to fill. |
 | [docs/capture-options.md](docs/capture-options.md) | Three ways to capture a room, compared. No winner picked. |
 | [docs/open-questions.md](docs/open-questions.md) | Questions we have not answered, and who could answer each. |
 | [docs/decisions/](docs/decisions/README.md) | One file per team decision. Empty so far. |
