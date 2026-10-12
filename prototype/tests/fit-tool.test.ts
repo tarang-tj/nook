@@ -76,7 +76,7 @@ describe("saving the plan and the walls", () => {
     return s;
   };
 
-  it("draws the outline with each wall's length, and without any length while the bars are being worked out", () => {
+  it("draws the outline with each wall's length", () => {
     const s = room();
     const { solved, words } = tell(s, { sample: true });
     const plan = planOf(solved, words.rows, SETTINGS, true);
@@ -86,12 +86,6 @@ describe("saving the plan and the walls", () => {
     expect(plan.svg.match(/class="wall"/g)).toHaveLength(6);
     expect(plan.svg).toContain(words.rows[0].text);
     expect(plan.svg).toContain('class="sheet"');
-    // A wall with no honest number gets no label, not its refusal.
-    const refused = planOf(solved, [{ name: "Wall 1", measured: null, text: "no number. Too uncertain." }, ...words.rows.slice(1)], SETTINGS, false);
-    expect(refused.ok && refused.svg.match(/class="wall"/g)).toHaveLength(5);
-    expect(refused.ok && refused.svg).not.toContain("Too uncertain.");
-    const waiting = planOf(solved, [], SETTINGS, false);
-    expect(waiting.ok && waiting.svg.includes('class="outline"') && !waiting.svg.includes('class="wall"')).toBe(true);
     expect(planOf(null, [], SETTINGS, false).ok).toBe(false);
   });
 

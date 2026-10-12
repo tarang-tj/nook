@@ -119,6 +119,10 @@ export function solve(scene: Scene): Solved {
   };
 }
 
+export const SPARE_REFUSED =
+  "A wall of the outline has no honest number, so the room around the thing has none either. " +
+  "Zoom in and drag the outline's corners onto their spots.";
+
 /** The error bar for every number in `solved`. Slow: 400 solves. Every
  * number sees the same simulated taps, so the bars agree with each other;
  * the simulated sets are worked out once and shared between the numbers. */
@@ -143,5 +147,10 @@ export function barsOf(scene: Scene, solved: Solved, options: { samples?: number
     // Room to spare may honestly be near zero or negative; a size may not.
     bars[key] = withBar(spreadOf(evaluate, options), key === "spare" ? "signed" : "size");
   }
+  // Room to spare is measured from the outline's walls. Where a wall is too
+  // uncertain to be given a number, a verdict about what fits inside it would
+  // rest on that same wall, so it is refused with it.
+  const wallRefused = Object.keys(bars).some((key) => key.startsWith("wall") && bars[key].value === null);
+  if (bars.spare && bars.spare.value !== null && wallRefused) bars.spare = { value: null, reason: SPARE_REFUSED };
   return bars;
 }
