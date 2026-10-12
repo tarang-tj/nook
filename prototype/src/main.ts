@@ -7,7 +7,7 @@ import { createPointer } from "./app/pointer";
 import { report, type Report } from "./app/report";
 import { placeSampleTaps, SAMPLE_EXTRAS } from "./app/sample-taps";
 import { sheetEdges } from "./app/sheet-edges";
-import { closeRoom, hasTaps, newState, removeExtra, reset, undo, type Tool } from "./app/state";
+import { canUndo, closeRoom, hasTaps, newState, removeExtra, reset, undo, type Tool } from "./app/state";
 import { clampView, isFitted, zoomWords } from "./app/zoom";
 import { floorToPhoto } from "./measure/inverse";
 import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
@@ -90,7 +90,8 @@ function render(): void {
 
   const plan = state.tool === "room" && state.closed ? planOf(solved, words.rows, set, sample) : null;
   shown = { words, plan };
-  el<HTMLButtonElement>("undo").disabled = el<HTMLButtonElement>("reset").disabled = !hasTaps(state);
+  el<HTMLButtonElement>("undo").disabled = !canUndo(state);
+  el<HTMLButtonElement>("reset").disabled = !hasTaps(state);
   el<HTMLButtonElement>("save-csv").disabled = words.rows.length === 0;
   showPanel(words, {
     state, hasPhoto: !!photo, sample, plan, unit: set.unit,

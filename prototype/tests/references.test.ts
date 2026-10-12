@@ -44,6 +44,18 @@ describe("adding a second sheet or a known length", () => {
     expect(page.state.history).toEqual(["sheet", "sheet", "sheet", "sheet"]);
   });
 
+  it("zooming with two fingers straight after asking for a second sheet does not cancel the request", () => {
+    const page = fakePage();
+    for (const p of letterInPhoto()) page.tapPhoto(p);
+    page.state.adding = "second";
+    page.pointer.down({ id: 1, x: 150, y: 200, type: "touch" }); // looks like the first corner
+    page.pointer.down({ id: 2, x: 250, y: 200, type: "touch" }); // no: it was a pinch
+    page.pointer.up({ id: 1, x: 150, y: 200, type: "touch" });
+    page.pointer.up({ id: 2, x: 250, y: 200, type: "touch" });
+    expect(page.state.points.second).toHaveLength(0);
+    expect(target(page.state)).toBe("second");
+  });
+
   it("says which references the solve used", () => {
     expect(tell(sample("room")).words.used).toBe("Plane map solved from: first sheet.");
     expect(tell(sample("room", "second")).words.used).toBe("Plane map solved from: first sheet, second sheet.");
@@ -118,7 +130,10 @@ describe("what the page does not catch, and says so", () => {
     const doubled = tell(sample("room", "span"), {}, { spanLength: STICK_CM * 2 }).words;
     expect(doubled.problem).toMatch(/^No measurement\. Known length 1 contradicts the first sheet\..*50% smaller than the length typed/);
     expect(doubled.rows).toEqual([]);
-    expect(tell(sample("room", "span")).words.problem).toMatch(/Known length 1 cannot be used: its length is zero or missing/);
+    expect(tell(sample("room", "span")).words.problem).toBe(
+      "No measurement. Known length 1 cannot be used: its length is zero or missing. Type its length under Tighter accuracy.",
+    );
+    expect(doubled.problem).toMatch(/both ends are on the floor\.$/);
     expect(tell(sample("room", "second"), {}, { swap2: true }).words.problem).toMatch(/The second sheet contradicts the first sheet/);
   });
 });

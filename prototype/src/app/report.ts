@@ -76,7 +76,11 @@ function build(s: State, page: Page, set: Settings, solved: Solved | null, bars:
   };
   if (!page.hasPhoto || !solved) return out;
   if (!solved.ok) {
-    out.problem = `No measurement. ${solved.reason} Drag the points or press Undo.`;
+    // Each refusal ends with what to do about it, unless it already says.
+    const then = /zero or missing/.test(solved.reason)
+      ? " Type its length under Tighter accuracy."
+      : /contradicts/.test(solved.reason) ? "" : " Drag the points or press Undo.";
+    out.problem = `No measurement. ${solved.reason}${then}`;
     return out;
   }
   if (Object.keys(solved.values).length === 0) return out; // nothing to measure yet

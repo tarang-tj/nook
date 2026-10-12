@@ -4,7 +4,7 @@ import { csvOf, planOf } from "../src/app/exports";
 import { barsOf, sceneOf, solve } from "../src/app/numbers";
 import { report } from "../src/app/report";
 import { placeSampleTaps } from "../src/app/sample-taps";
-import { closeRoom, newState, undo } from "../src/app/state";
+import { canUndo, closeRoom, newState, undo } from "../src/app/state";
 import { jitterFused, solveFused } from "../src/measure/fused";
 import { dist, type Pt } from "../src/measure/homography";
 import { floorPoints, outlineMeasures } from "../src/measure/outline";
@@ -64,6 +64,25 @@ describe("Room: tap the corners in order and close the outline", () => {
     const s = newState("room");
     for (const p of [...letterInPhoto(), ROOM_TAPS[0], ROOM_TAPS[1]]) s.points[s.points.sheet.length < 4 ? "sheet" : "room"].push(p);
     expect(closeRoom(s)).toBe(false);
+  });
+
+  it("Undo only takes back what the chosen tool shows", () => {
+    const s = newState("room");
+    placeSampleTaps(s);
+    s.tool = "fit";
+    placeSampleTaps(s); // the gap's two taps are now the newest steps
+    s.tool = "room";
+    expect(canUndo(s)).toBe(true);
+    undo(s); // not a gap tap, which the Room tab does not show: the closing
+    expect(s.points.gap).toHaveLength(2);
+    expect(s.closed).toBe(false);
+    undo(s);
+    expect(s.points.room).toHaveLength(5);
+    s.tool = "distance";
+    for (let i = 0; i < 4; i++) undo(s); // only the sheet shows here
+    expect(s.points.sheet).toHaveLength(0);
+    expect(canUndo(s)).toBe(false);
+    expect(s.points.room).toHaveLength(5);
   });
 
   it("an outline that crosses itself gets its reason in words and no numbers", () => {

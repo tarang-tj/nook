@@ -16,7 +16,7 @@ export const LIMIT: Record<Group, number> = { sheet: 4, ends: 2, room: 24, gap: 
 
 export type State = {
   tool: Tool;
-  /** An extra reference the person asked to add and has not started tapping. */
+  /** An extra reference the person asked to add and has not finished tapping. */
   adding: "second" | "span" | null;
   points: Record<Group, Pt[]>;
   /** The room outline has been closed. */
@@ -92,7 +92,9 @@ export function place(s: State, p: Pt): Handle | null {
   if (!group) return null;
   s.points[group].push(p);
   s.history.push(group);
-  if (s.adding === group) s.adding = null;
+  // The request stays until its last tap, so a tap that is taken back (the
+  // first finger of a pinch, or Undo) leaves the page still waiting for it.
+  if (s.adding === group && s.points[group].length === LIMIT[group]) s.adding = null;
   return { group, index: s.points[group].length - 1 };
 }
 
@@ -109,12 +111,25 @@ export function closeRoom(s: State): boolean {
   return true;
 }
 
-/** Take back the last tap, or reopen the outline if closing was last. */
+/** Take back the last step that shows in the chosen tool: its last tap, or
+ * the closing of the outline. Steps made in another tool are left alone,
+ * so Undo never removes something the person cannot see. */
 export function undo(s: State): void {
-  const last = s.history.pop();
-  if (!last) return;
-  if (last === "close") s.closed = false;
-  else s.points[last].pop();
+  const seen = shown(s);
+  for (let i = s.history.length - 1; i >= 0; i--) {
+    const step = s.history[i];
+    if (step === "close" ? !seen.includes("room") : !seen.includes(step)) continue;
+    s.history.splice(i, 1);
+    if (step === "close") s.closed = false;
+    else s.points[step].pop();
+    return;
+  }
+}
+
+/** True when Undo has something to take back in the chosen tool. */
+export function canUndo(s: State): boolean {
+  const seen = shown(s);
+  return s.history.some((step) => (step === "close" ? seen.includes("room") : seen.includes(step)));
 }
 
 /** Drop one extra reference and every trace of it. */
