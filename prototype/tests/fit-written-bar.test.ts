@@ -19,6 +19,11 @@ describe("the verdict and the bar printed beside it", () => {
     expect(fitVerdict({ value: 1000, error: 266 }, 700).verdict).toBe("fits");
   });
 
+  it("in inches, a written bar that just reaches the size needed is too close to call", () => {
+    const call = fitVerdict({ value: 2089.773, error: 72.801 }, 86 * 25.4, "in");
+    expect(call.sentence).toMatch(/^The gap is 82 ± 4 in and the thing needs 86 in: too close to call/);
+  });
+
   it("a bar of zero is compared as it is", () => {
     expect(fitVerdict({ value: 800, error: 0 }, 800).verdict).toBe("fits");
   });

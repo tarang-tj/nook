@@ -35,6 +35,8 @@ const withError = (mm: number, errorMm: number, unit: Unit): string =>
 const honest = (gap: Gap | Bar): gap is { value: number; error: number } =>
   gap.value !== null && Number.isFinite(gap.value) && Number.isFinite(gap.error) && gap.error >= 0;
 
+const EPS = 1e-6; // closer than this counts as touching, mm
+
 /** The bar as it is written in the sentence, back in mm. It is never narrower
  * than the bar worked out, and the verdict is decided on it, so the words
  * never disagree with the figures printed beside them. */
@@ -50,9 +52,10 @@ function compare<Word extends string>(
   worked: number, workedError: number, need: number, yes: Word, no: Word, lead: string, unit: Unit,
 ): Verdict<Word> {
   const { value: have, error } = written(worked, workedError, unit);
-  if (have - error >= need)
+  // EPS: figures written in inches come back to mm a hair off; equal counts as reaching.
+  if (have - error >= need - EPS)
     return { verdict: yes, spareMm: have - error - need, sentence: `${lead}: ${yes}, with at least ${plain(have - error - need, unit)} to spare.` };
-  if (have + error < need)
+  if (have + error < need - EPS)
     return { verdict: no, spareMm: have + error - need, sentence: `${lead}: ${no}, short by at least ${plain(need - have - error, unit)}.` };
   return {
     verdict: "too close to call",
@@ -84,7 +87,6 @@ export function footprint(center: Pt, widthMm: number, depthMm: number, angleRad
   });
 }
 
-const EPS = 1e-6; // closer than this counts as touching, mm
 const STEPS = 16; // points checked along each side of the footprint
 
 function pointToSegment(p: Pt, a: Pt, b: Pt): number {
