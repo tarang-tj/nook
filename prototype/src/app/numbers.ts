@@ -12,15 +12,17 @@ import { applyHomography, planeDistance, type Mat3, type Pt } from "../measure/h
 import { floorPoints, outlineMeasures } from "../measure/outline";
 import { referenceById } from "../measure/references";
 import { jitterPoint, spreadOf, withBar, type Bar, type Draw } from "../measure/spread";
-import { toMm, type Unit } from "../measure/units";
+import type { Unit } from "../measure/units";
 import { thingAt, type State } from "./state";
 
-/** The choices made with the controls, read off the page by main.ts.
- * Lengths are in the chosen unit, as typed. */
+/** The choices made with the controls, read off the page by ui/settings.
+ * Typed lengths arrive in mm (NaN when a box is empty): the unit a number
+ * was typed in is settled where it is read (typed-length.ts), so changing
+ * Units cannot change a length. `unit` is only how results are written. */
 export type Settings = {
   paper: string; swap: boolean; unit: Unit;
-  paper2: string; swap2: boolean; spanLength: number;
-  thingWidth: number; thingDepth: number;
+  paper2: string; swap2: boolean; spanMm: number;
+  thingWidthMm: number; thingDepthMm: number;
 };
 
 /** Everything the numbers depend on, and nothing else: two equal scenes give
@@ -58,9 +60,9 @@ export function sceneOf(s: State, set: Settings): Scene | null {
   if (sheet.length < 4) return null;
   const input: FusedInput = { sheet: { corners: sheet, reference: referenceById(set.paper), swapSides: set.swap } };
   if (second.length === 4) input.secondSheet = { corners: second, reference: referenceById(set.paper2), swapSides: set.swap2 };
-  if (span.length === 2) input.spans = [{ a: span[0], b: span[1], lengthMm: toMm(set.spanLength, set.unit) }];
+  if (span.length === 2) input.spans = [{ a: span[0], b: span[1], lengthMm: set.spanMm }];
   const at = thingAt(s);
-  const [widthMm, depthMm] = [toMm(set.thingWidth, set.unit), toMm(set.thingDepth, set.unit)];
+  const [widthMm, depthMm] = [set.thingWidthMm, set.thingDepthMm];
   return {
     input,
     ends: s.tool === "distance" && ends.length === 2 ? ends : [],

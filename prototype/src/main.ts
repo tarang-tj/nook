@@ -13,14 +13,13 @@ import { floorToPhoto } from "./measure/inverse";
 import { TAP_SIGMA_SCREEN_PX } from "./measure/monte-carlo";
 import type { Plan } from "./measure/plan";
 import { referenceById } from "./measure/references";
-import { fromMm } from "./measure/units";
 import { isMoving, wireTabs, wireView } from "./ui/controls";
 import { download, el } from "./ui/dom";
 import { draw, drawCross, type Box, type Photo } from "./ui/draw";
 import { showPanel } from "./ui/panel";
 import { wirePhotoInputs } from "./ui/photo-input";
 import { wirePointer } from "./ui/pointer-events";
-import { readSettings, SETTING_IDS } from "./ui/settings";
+import { readSettings, setLength, SETTING_IDS } from "./ui/settings";
 import { fitContain, type Fit } from "./ui/view";
 
 const stage = el("stage");
@@ -139,8 +138,7 @@ act("sample-taps", () => {
   placeSampleTaps(state);
   // The made-up floor's own paper size and stick length, so the person need not know them.
   if (state.points.second.length === 4 && before.second < 4) input("paper2").value = SAMPLE_EXTRAS.paper2;
-  if (state.points.span.length === 2 && before.span < 2)
-    input("span-length").value = String(Number(fromMm(SAMPLE_EXTRAS.spanMm, readSettings().unit).toFixed(2)));
+  if (state.points.span.length === 2 && before.span < 2) setLength("spanMm", SAMPLE_EXTRAS.spanMm);
 });
 act("add-second", () => { state.adding = "second"; });
 act("add-span", () => { state.adding = "span"; });

@@ -11,7 +11,7 @@ import { fitContain, toScreen, type Fit } from "../src/ui/view";
 export const PHOTO = { w: 3000, h: 4000 };
 
 export const SETTINGS: Settings = {
-  paper: "letter", swap: false, unit: "cm", paper2: "a4", swap2: false, spanLength: NaN, thingWidth: 80, thingDepth: 60,
+  paper: "letter", swap: false, unit: "cm", paper2: "a4", swap2: false, spanMm: NaN, thingWidthMm: 800, thingDepthMm: 600,
 };
 
 /** Everything the page would say for these taps, with the error bars worked

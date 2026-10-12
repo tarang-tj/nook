@@ -62,7 +62,7 @@ describe("the plan from above", () => {
 describe("Fit: the thing inside an outline", () => {
   it("gets no verdict when a wall of the outline has no honest number", () => {
     const s = outline("fit", sampleTaps("room"), loose);
-    const { words, bars } = tell(s, {}, { thingWidth: 30, thingDepth: 30 });
+    const { words, bars } = tell(s, {}, { thingWidthMm: 300, thingDepthMm: 300 });
     expect(Object.keys(bars!).filter((k) => k.startsWith("wall") && bars![k].value === null).length).toBeGreaterThan(0);
     expect(bars!.spare).toEqual({ value: null, reason: expect.stringContaining("A wall of the outline has no honest number") });
     const inside = words.verdicts.at(-1)!;
@@ -73,7 +73,7 @@ describe("Fit: the thing inside an outline", () => {
   it("still gets one when every wall has a number", () => {
     const s = outline("fit", sampleTaps("room"));
     s.thing = project({ x: 300, y: 700 });
-    const { words, bars } = tell(s, {}, { thingWidth: 30, thingDepth: 30 });
+    const { words, bars } = tell(s, {}, { thingWidthMm: 300, thingDepthMm: 300 });
     expect(bars!.spare.value).not.toBeNull();
     expect(words.verdicts.at(-1)).toMatch(/: inside, with at least \d+(\.\d)? cm to spare\.$/);
   });

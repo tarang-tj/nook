@@ -6,7 +6,6 @@ import { BASIS } from "../measure/monte-carlo";
 import type { Measured } from "../measure/noise";
 import { OUTLINE_BASIS } from "../measure/outline";
 import { referenceById } from "../measure/references";
-import { toMm } from "../measure/units";
 import type { Bars, Settings, Solved } from "./numbers";
 import { sheetWords } from "./sheet-edges";
 import type { State } from "./state";
@@ -133,7 +132,7 @@ function build(s: State, page: Page, set: Settings, solved: Solved | null, bars:
   }
 
   if (s.tool === "fit") {
-    const [width, depth] = [toMm(set.thingWidth, set.unit), toMm(set.thingDepth, set.unit)];
+    const [width, depth] = [set.thingWidthMm, set.thingDepthMm];
     if (bars.gap) {
       out.verdicts.push(`Width first. ${fitVerdict(bars.gap, width, set.unit).sentence}`);
       if (depth !== width) out.verdicts.push(`Turned a quarter turn. ${fitVerdict(bars.gap, depth, set.unit).sentence}`);

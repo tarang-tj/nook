@@ -22,7 +22,7 @@ describe("Fit: one example of what a measured outline allows", () => {
     expect(s.points.gap).toHaveLength(2);
     expect(s.closed).toBe(true);
     // The true gap is 90 cm. Near the bar's edge the honest answer is "too close to call".
-    const say = (w: number, d: number) => tell(s, {}, { thingWidth: w, thingDepth: d }).words.verdicts;
+    const say = (w: number, d: number) => tell(s, {}, { thingWidthMm: w * 10, thingDepthMm: d * 10 }).words.verdicts;
     expect(say(60, 40)[0]).toMatch(/^Width first\. The gap is 9\d ± \d+ cm and the thing needs 60 cm: fits, with at least/);
     expect(say(60, 40)[1]).toMatch(/^Turned a quarter turn\..*needs 40 cm: fits/);
     expect(say(140, 60)[0]).toMatch(/needs 140 cm: does not fit, short by at least/);
@@ -50,7 +50,7 @@ describe("Fit: one example of what a measured outline allows", () => {
     expect(tell(page.state).words.verdicts.at(-1)).toMatch(/: outside, short by at least/);
     // A small thing in the middle of the wide part has room to spare.
     page.state.thing = project({ x: 300, y: 700 });
-    expect(tell(page.state, {}, { thingWidth: 30, thingDepth: 30 }).words.verdicts.at(-1)).toMatch(/: inside, with at least \d+(\.\d)? cm to spare\.$/);
+    expect(tell(page.state, {}, { thingWidthMm: 300, thingDepthMm: 300 }).words.verdicts.at(-1)).toMatch(/: inside, with at least \d+(\.\d)? cm to spare\.$/);
     // Turning it changes the footprint the verdict is about.
     const corner = () => {
       const solved = tell(page.state).solved;

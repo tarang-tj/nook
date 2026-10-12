@@ -22,7 +22,7 @@ const sample = (tool: Tool, extra: "second" | "span" | "both" | "none" = "none")
   return s;
 };
 const shown = (bar: Bar) => bar as { value: number; error: number };
-const STICK_CM = SAMPLE_EXTRAS.spanMm / 10;
+const STICK_MM = SAMPLE_EXTRAS.spanMm;
 
 describe("adding a second sheet or a known length", () => {
   it("sends the next four taps to the second sheet, then goes back to the tool", () => {
@@ -59,7 +59,7 @@ describe("adding a second sheet or a known length", () => {
   it("says which references the solve used", () => {
     expect(tell(sample("room")).words.used).toBe("Plane map solved from: first sheet.");
     expect(tell(sample("room", "second")).words.used).toBe("Plane map solved from: first sheet, second sheet.");
-    expect(tell(sample("room", "both"), {}, { spanLength: STICK_CM }).words.used).toBe(
+    expect(tell(sample("room", "both"), {}, { spanMm: STICK_MM }).words.used).toBe(
       "Plane map solved from: first sheet, second sheet, known length 1.",
     );
   });
@@ -75,7 +75,7 @@ describe("adding a second sheet or a known length", () => {
     const wall = (s: State, set = {}) => shown(tell(s, {}, set).bars!.wall5); // the 250 cm wall
     const one = wall(sample("room"));
     const two = wall(sample("room", "second"));
-    const taped = wall(sample("room", "span"), { spanLength: STICK_CM });
+    const taped = wall(sample("room", "span"), { spanMm: STICK_MM });
     expect(one.error).toBeGreaterThan(250);
     expect(two.error).toBeLessThan(one.error / 4);
     expect(taped.error).toBeLessThan(one.error / 3);
@@ -109,7 +109,7 @@ describe("what the page does not catch, and says so", () => {
   });
 
   it("believes a length typed 10% too long: no refusal, and the truth is outside the bar", () => {
-    const { solved, bars } = tell(sample("room", "span"), {}, { spanLength: STICK_CM * 1.1 });
+    const { solved, bars } = tell(sample("room", "span"), {}, { spanMm: STICK_MM * 1.1 });
     expect(solved?.ok).toBe(true);
     const wall = shown(bars!.wall5);
     expect(wall.value).toBeGreaterThan(2700);
@@ -127,7 +127,7 @@ describe("what the page does not catch, and says so", () => {
   });
 
   it("refuses in words when the mismatch is gross, or a length is missing", () => {
-    const doubled = tell(sample("room", "span"), {}, { spanLength: STICK_CM * 2 }).words;
+    const doubled = tell(sample("room", "span"), {}, { spanMm: STICK_MM * 2 }).words;
     expect(doubled.problem).toMatch(/^No measurement\. Known length 1 contradicts the first sheet\..*50% smaller than the length typed/);
     expect(doubled.rows).toEqual([]);
     expect(tell(sample("room", "span")).words.problem).toBe(
