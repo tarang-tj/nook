@@ -16,7 +16,7 @@ It lives in [`prototype/`](../prototype/). It exists so the team has something c
 
 What it does (draft sample, extended 2026-10-12 so the team has more to react to; none of these is a chosen direction):
 
-- Runs in a phone or laptop browser. Nothing to install on the phone.
+- Built to run in a browser on a phone or a laptop, with nothing to install. So far it has only been run in a laptop browser, at phone size and desktop size.
 - Takes one photo of a floor with one sheet of US Letter or A4 paper lying on it. You tap the four corners of the sheet. The page writes on each edge the length it has assumed for it.
 - Has a "Try the sample" button that draws a made-up floor (not a photo of a real room) and can place the taps for you. Because the page drew the floor, it knows where on it each tap really is, and it prints the true value for the spots as tapped beside its own answer.
 - Zooms and slides the photo (pinch, mouse wheel, buttons, keyboard), so a tap can be placed more exactly. A tap keeps the uncertainty of the zoom it was made at.

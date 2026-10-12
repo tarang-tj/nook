@@ -72,6 +72,29 @@ describe("the page, wired", () => {
     expect(page.el("paper").value).toBe("a4");
   });
 
+  it("a paper picked while the made-up floor is up is kept for the next photo", async () => {
+    const page = await startPage();
+    page.press("sample");
+    page.set("paper", "a4"); // picked by hand, with the made-up floor showing
+    page.loadPhoto();
+    expect(page.el("paper").value).toBe("a4");
+    page.press("sample");
+    page.press("tab-room");
+    page.press("sample-taps"); // the page sets the floor's own paper: not a pick
+    page.loadPhoto();
+    expect(page.el("paper").value).toBe("a4");
+  });
+
+  it("any number on the page comes with the not-checked sentence", async () => {
+    const page = await startPage();
+    page.press("sample");
+    page.press("tab-room");
+    page.press("sample-taps");
+    vi.runAllTimers();
+    expect(page.el("unchecked").hidden).toBe(false);
+    expect(page.el("unchecked").textContent).toMatch(/Not checked against a tape measure/);
+  });
+
   it("the saved CSV of the made-up floor says so on every row, with the figures on the page", async () => {
     const page = await startPage();
     page.press("sample");
