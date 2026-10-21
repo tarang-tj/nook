@@ -1,0 +1,30 @@
+{
+  "name": "nook-site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nook landing page: an animated early-interest site for students, with signups sent to a Google Form.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "check": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.2.9",
+    "@fontsource-variable/outfit": "^5.2.8",
+    "motion": "^12.23.24",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.3"
+  }
+}

@@ -64,7 +64,29 @@ Every result comes with words that say what its error bar covers and leaves out.
 | [research/](research/README.md) | Sources and notes. |
 | [interviews/](interviews/README.md) | Customer interview notes. Read the consent rule first. |
 | [prototype/](prototype/) | The web prototype (Vite and TypeScript). |
+| [site/](site/) | The public landing page (Vite, React, and Motion). Draft. Not a product decision. |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to make a change, for people new to git. |
+
+## Public site
+
+The page in [site/](site/) is a draft landing page for the pitch line, so people can leave early interest. It does not publish the prototype or the notes in `docs/` and `interviews/`.
+
+```sh
+cd site
+npm ci
+npm run dev
+```
+
+Open the `Local` address it prints. The signup form is a Google Form. Put its link in `GOOGLE_FORM_URL` in [site/src/config.ts](site/src/config.ts). Until that string is filled in, the join button stays off. The form should be set so anyone with the link can respond. Answers stay in Google Forms. Do not commit anyone's email address or other answers.
+
+To check the page the way CI does:
+
+```sh
+cd site
+npm ci && npm run check && npm run build
+```
+
+Once this is on `main` and the repository's Pages source is set to GitHub Actions, the page is at <https://tarang-tj.github.io/nook/>. Setting that source needs an admin on the repository.
 
 ## Team
 
